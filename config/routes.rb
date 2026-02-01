@@ -1,3 +1,8 @@
 Rails.application.routes.draw do
-  # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
+  root 'home#index'
+
+  # Vue router handles these client-side routes
+  get '/reports', to: 'home#index'
+  get '/chart-of-accounts', to: 'home#index'
+  get '/transactions', to: 'home#index'
 end

@@ -1,0 +1,18 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  database: qbo_reports_development
+
+test:
+  <<: *default
+  database: qbo_reports_test
+
+production:
+  <<: *default
+  database: qbo_reports_production
+  username: qbo_reports
+  password: <%= ENV["QBO_REPORTS_DATABASE_PASSWORD"] %>
