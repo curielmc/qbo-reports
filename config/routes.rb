@@ -45,9 +45,16 @@ Rails.application.routes.draw do
       get 'invitations/:token', to: 'invitations#show'
       post 'invitations/:token/accept', to: 'invitations#accept'
 
+      # Dashboard
+      get 'dashboard', to: 'dashboard#show'
+
       resources :households, only: [:index, :show] do
         resources :accounts, only: [:index, :create, :update, :destroy]
-        resources :transactions, only: [:index, :create, :update, :destroy]
+        resources :transactions, only: [:index, :create, :update, :destroy] do
+          collection do
+            post :categorize
+          end
+        end
         resources :chart_of_accounts, only: [:index, :create, :update, :destroy]
         
         # Reports
