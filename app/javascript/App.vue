@@ -10,12 +10,20 @@
         </div>
         <div class="flex-none">
           <ul class="menu menu-horizontal px-1">
+            <li><router-link to="/chat" class="font-medium text-primary">💬 AI Chat</router-link></li>
             <li><router-link to="/" class="font-medium">Dashboard</router-link></li>
-            <li><router-link to="/reports" class="font-medium">Reports</router-link></li>
-            <li><router-link to="/chart-of-accounts" class="font-medium">Chart of Accounts</router-link></li>
             <li><router-link to="/transactions" class="font-medium">Transactions</router-link></li>
-            <li><router-link to="/linked-accounts" class="font-medium">🏦 Accounts</router-link></li>
-            <li><router-link to="/rules" class="font-medium">⚡ Rules</router-link></li>
+            <li><router-link to="/reports" class="font-medium">Reports</router-link></li>
+            <li>
+              <details>
+                <summary class="font-medium">More</summary>
+                <ul class="bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+                  <li><router-link to="/chart-of-accounts">Chart of Accounts</router-link></li>
+                  <li><router-link to="/linked-accounts">🏦 Linked Accounts</router-link></li>
+                  <li><router-link to="/rules">⚡ Auto-Rules</router-link></li>
+                </ul>
+              </details>
+            </li>
             <li v-if="isAdmin">
               <details>
                 <summary class="font-medium">Admin</summary>

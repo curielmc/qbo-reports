@@ -98,12 +98,21 @@
       </div>
     </div>
 
+    <!-- AI Alerts -->
+    <div v-if="data.alerts?.length" class="mb-8">
+      <div v-for="alert in data.alerts" :key="alert.message" 
+        :class="['alert shadow-lg mb-2', alertClass(alert.severity)]">
+        <span>{{ alertIcon(alert.type) }} {{ alert.message }}</span>
+        <router-link v-if="alert.type === 'uncategorized'" to="/chat" class="btn btn-sm">Fix with AI →</router-link>
+      </div>
+    </div>
+
     <!-- Quick Actions -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <router-link to="/chat" class="btn btn-primary gap-2">💬 Ask AI</router-link>
       <router-link to="/reports" class="btn btn-outline gap-2">📈 Reports</router-link>
       <router-link to="/linked-accounts" class="btn btn-outline gap-2">🏦 Link Account</router-link>
       <router-link to="/transactions" class="btn btn-outline gap-2">💳 Transactions</router-link>
-      <router-link to="/chart-of-accounts" class="btn btn-outline gap-2">📋 Chart of Accounts</router-link>
     </div>
 
     <!-- Recent Transactions -->
@@ -174,6 +183,16 @@ const incomeRatio = computed(() => {
   if (income === 0) return 0
   return Math.max(0, ((income - expenses) / income) * 100)
 })
+
+const alertClass = (severity) => {
+  if (severity >= 70) return 'alert-error'
+  if (severity >= 40) return 'alert-warning'
+  return 'alert-info'
+}
+const alertIcon = (type) => {
+  const icons = { unusual_amount: '⚠️', spending_spike: '📈', new_vendors: '🆕', uncategorized: '📋' }
+  return icons[type] || '🔔'
+}
 
 const maxSpending = computed(() => {
   return Math.max(...(data.value.monthly_spending || []).map(m => m.amount), 1)

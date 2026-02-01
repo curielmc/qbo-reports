@@ -81,6 +81,7 @@ module Api
             net_worth: total_assets - total_liabilities
           },
           monthly_spending: monthly_spending,
+          alerts: companies.flat_map { |c| AnomalyDetector.new(c).check_all }.first(5),
           recent_transactions: recent.map { |t|
             {
               id: t.id,

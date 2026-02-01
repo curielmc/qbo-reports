@@ -63,6 +63,11 @@ Rails.application.routes.draw do
           end
         end
         
+        # Chat
+        get 'chat', to: 'chat#index'
+        post 'chat', to: 'chat#create'
+        delete 'chat', to: 'chat#destroy'
+
         # Reports
         get 'reports/profit_loss', to: 'reports#profit_loss'
         get 'reports/balance_sheet', to: 'reports#balance_sheet'
@@ -83,6 +88,7 @@ Rails.application.routes.draw do
   get '/transactions', to: 'home#index'
   get '/linked-accounts', to: 'home#index'
   get '/rules', to: 'home#index'
+  get '/chat', to: 'home#index'
   get '/login', to: 'home#index'
   get '/admin/*path', to: 'home#index'
   get '/invite/:token', to: 'home#index'
