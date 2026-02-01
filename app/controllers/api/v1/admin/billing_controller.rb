@@ -66,7 +66,8 @@ module Api
         def billing_params
           params.require(:billing).permit(
             :engagement_type, :monthly_fee, :hourly_rate,
-            :ai_credit_cents, :per_query_cents, :billing_active
+            :ai_credit_cents, :per_query_cents, :billing_active,
+            :clockify_project_id, :clockify_client_id
           )
         end
       end

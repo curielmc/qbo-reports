@@ -9,10 +9,26 @@ module Api
       # Current billing cycle usage
       def show
         meter = UsageMeter.new(@company, current_user)
-        render json: meter.cycle_usage.merge(
+        data = meter.cycle_usage.merge(
           engagement_type: @company.engagement_type,
-          monthly_fee: @company.monthly_fee
+          monthly_fee: @company.monthly_fee,
+          hourly_rate: @company.hourly_rate
         )
+
+        # Include Clockify hours for hourly engagements
+        if @company.engagement_type == 'hourly'
+          hours = meter.clockify_hours
+          if hours
+            data[:hours] = hours
+            data[:base_fee] = hours[:total_amount]
+            data[:total_due] = hours[:total_amount] + (data[:overage] || 0)
+          end
+        else
+          data[:base_fee] = @company.monthly_fee
+          data[:total_due] = @company.monthly_fee + (data[:overage] || 0)
+        end
+
+        render json: data
       end
 
       # GET /api/v1/companies/:company_id/usage/queries

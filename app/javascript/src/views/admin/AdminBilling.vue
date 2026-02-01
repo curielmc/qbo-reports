@@ -104,6 +104,11 @@
             <input v-model.number="form.per_query_cents" type="number" class="input input-bordered" />
             <label class="label"><span class="label-text-alt">${{ (form.per_query_cents / 100).toFixed(2) }} per query</span></label>
           </div>
+          <div v-if="form.engagement_type === 'hourly'" class="form-control mb-3">
+            <label class="label"><span class="label-text">Clockify Project ID</span></label>
+            <input v-model="form.clockify_project_id" type="text" class="input input-bordered" placeholder="e.g. 65a3b1..." />
+            <label class="label"><span class="label-text-alt">Links this company to a Clockify project for time tracking</span></label>
+          </div>
           <div class="modal-action">
             <button type="button" @click="showModal = false" class="btn">Cancel</button>
             <button type="submit" class="btn btn-primary">Save</button>
@@ -138,7 +143,8 @@ const editBilling = (c) => {
     engagement_type: c.engagement_type,
     monthly_fee: c.monthly_fee,
     hourly_rate: c.hourly_rate || 0,
-    per_query_cents: 5 // default
+    per_query_cents: 5,
+    clockify_project_id: c.clockify_project_id || ''
   }
   showModal.value = true
 }

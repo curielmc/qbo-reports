@@ -25,10 +25,15 @@
 
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <h2 class="card-title text-base-content/60 text-sm">Base Fee</h2>
+          <h2 class="card-title text-base-content/60 text-sm">
+            {{ usage.engagement_type === 'flat_fee' ? 'Monthly Fee' : 'Time & Hours' }}
+          </h2>
           <p class="text-3xl font-bold font-mono">{{ formatCurrency(usage.base_fee) }}</p>
-          <p class="text-sm text-base-content/50 mt-1">
-            {{ usage.engagement_type === 'flat_fee' ? 'Monthly flat fee' : `${usage.hours || 0} hours × ${formatCurrency(usage.hourly_rate)}/hr` }}
+          <p v-if="usage.engagement_type === 'flat_fee'" class="text-sm text-base-content/50 mt-1">
+            Monthly flat fee
+          </p>
+          <p v-else class="text-sm text-base-content/50 mt-1">
+            {{ usage.hours?.total_hours || 0 }} hrs × {{ formatCurrency(usage.hourly_rate) }}/hr
           </p>
         </div>
       </div>
@@ -69,6 +74,47 @@
 
         <div v-if="usage.overage > 0" class="alert alert-warning mt-4">
           <span>⚠️ You've exceeded your included credit. Additional queries billed at {{ formatCurrency(usage.per_query_rate) }}/query.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Time Entries (hourly engagements) -->
+    <div v-if="usage.engagement_type === 'hourly' && usage.hours?.entries?.length" class="card bg-base-100 shadow-xl mb-8">
+      <div class="card-body">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="card-title text-lg">⏱️ Time Entries</h2>
+          <div class="badge badge-primary badge-lg font-mono">
+            {{ usage.hours.total_hours }} hrs = {{ formatCurrency(usage.hours.total_amount) }}
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Team Member</th>
+                <th class="text-right">Hours</th>
+                <th class="text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(entry, i) in usage.hours.entries" :key="i" class="hover">
+                <td class="text-sm whitespace-nowrap">{{ entry.date }}</td>
+                <td class="text-sm">{{ entry.description || '—' }}</td>
+                <td class="text-sm">{{ entry.user || '—' }}</td>
+                <td class="text-right font-mono text-sm">{{ entry.duration_hours }}h</td>
+                <td class="text-right font-mono text-sm">{{ formatCurrency(entry.duration_hours * (usage.hourly_rate || 0)) }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold">
+                <td colspan="3">Total</td>
+                <td class="text-right font-mono">{{ usage.hours.total_hours }}h</td>
+                <td class="text-right font-mono">{{ formatCurrency(usage.hours.total_amount) }}</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
     </div>

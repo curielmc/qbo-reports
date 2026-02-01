@@ -22,6 +22,12 @@ Rails.application.routes.draw do
             post :reset_credit
           end
         end
+
+        # Clockify integration
+        get 'clockify/projects', to: 'clockify#projects'
+        get 'clockify/clients', to: 'clockify#clients'
+        get 'clockify/summary', to: 'clockify#summary'
+        post 'clockify/setup/:company_id', to: 'clockify#setup'
         resources :users, only: [:index, :create, :update, :destroy]
         resources :companies, only: [:index, :create, :update, :destroy] do
           member do

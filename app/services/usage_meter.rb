@@ -56,6 +56,40 @@ class UsageMeter
     }
   end
 
+  # Clockify time entries for hourly engagements
+  def clockify_hours(start_date = nil, end_date = nil)
+    return nil unless @company.engagement_type == 'hourly' && @company.clockify_project_id.present?
+
+    start_date ||= @company.billing_cycle_start || Date.current.beginning_of_month
+    end_date ||= Date.current
+
+    clockify = ClockifyService.new
+    entries = clockify.time_entries(
+      project_id: @company.clockify_project_id,
+      start_date: start_date,
+      end_date: end_date
+    )
+
+    return nil unless entries
+
+    total_seconds = entries.sum { |e| e['timeInterval']&.[]('duration')&.then { |d| parse_duration(d) } || 0 }
+    total_hours = (total_seconds / 3600.0).round(2)
+
+    {
+      entries: entries.map { |e|
+        {
+          description: e['description'],
+          date: e['timeInterval']&.[]('start')&.then { |s| Date.parse(s) rescue nil },
+          duration_hours: ((parse_duration(e['timeInterval']&.[]('duration') || '') || 0) / 3600.0).round(2),
+          user: e['userName'] || e.dig('user', 'name')
+        }
+      },
+      total_hours: total_hours,
+      total_amount: (total_hours * (@company.hourly_rate || 0)).round(2),
+      hourly_rate: @company.hourly_rate
+    }
+  end
+
   # Monthly summary for invoicing
   def billing_summary(month = nil)
     month ||= Date.current.beginning_of_month
@@ -63,11 +97,17 @@ class UsageMeter
 
     queries = @company.ai_queries.where(created_at: month..month_end)
 
+    # Base fee: flat or hourly from Clockify
     base_fee = case @company.engagement_type
-    when 'flat_fee' then @company.monthly_fee
-    when 'hourly' then 0 # Calculated separately from time tracking
+    when 'flat_fee'
+      @company.monthly_fee
+    when 'hourly'
+      hours_data = clockify_hours(month, month_end)
+      hours_data ? hours_data[:total_amount] : 0
     else 0
     end
+
+    hours_detail = @company.engagement_type == 'hourly' ? clockify_hours(month, month_end) : nil
 
     credit = @company.ai_credit_cents / 100.0
     total_query_cost = queries.sum(:billed_amount).round(2)
@@ -78,6 +118,7 @@ class UsageMeter
       company: @company.name,
       engagement_type: @company.engagement_type,
       base_fee: base_fee,
+      hours: hours_detail,
       ai_queries: queries.count,
       ai_query_cost: total_query_cost,
       ai_credit: credit,
@@ -95,5 +136,14 @@ class UsageMeter
   def estimate_ai_cost(input_tokens, output_tokens)
     # GPT-4o-mini pricing: $0.15/1M input, $0.60/1M output
     (input_tokens * 0.00000015 + output_tokens * 0.0000006).round(6)
+  end
+
+  # Parse ISO 8601 duration (PT1H30M15S) to seconds
+  def parse_duration(str)
+    return 0 unless str.is_a?(String)
+    hours = str[/(\d+)H/, 1].to_i
+    minutes = str[/(\d+)M/, 1].to_i
+    seconds = str[/(\d+)S/, 1].to_i
+    hours * 3600 + minutes * 60 + seconds
   end
 end
