@@ -56,10 +56,22 @@ Rails.application.routes.draw do
           end
         end
         resources :chart_of_accounts, only: [:index, :create, :update, :destroy]
+        resources :categorization_rules, only: [:index, :create, :update, :destroy] do
+          collection do
+            post :run
+            get :suggestions
+          end
+        end
         
         # Reports
         get 'reports/profit_loss', to: 'reports#profit_loss'
         get 'reports/balance_sheet', to: 'reports#balance_sheet'
+
+        # Exports
+        get 'exports/transactions', to: 'exports#transactions_csv'
+        get 'exports/profit_loss', to: 'exports#profit_loss_csv'
+        get 'exports/balance_sheet', to: 'exports#balance_sheet_csv'
+        get 'exports/chart_of_accounts', to: 'exports#chart_of_accounts_csv'
       end
     end
   end
@@ -70,6 +82,7 @@ Rails.application.routes.draw do
   get '/chart-of-accounts', to: 'home#index'
   get '/transactions', to: 'home#index'
   get '/linked-accounts', to: 'home#index'
+  get '/rules', to: 'home#index'
   get '/login', to: 'home#index'
   get '/admin/*path', to: 'home#index'
   get '/invite/:token', to: 'home#index'

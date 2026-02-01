@@ -10,6 +10,7 @@ class Company < ApplicationRecord
   has_many :plaid_items, dependent: :destroy
   has_many :transactions, through: :accounts
   has_many :chart_of_accounts, dependent: :destroy
+  has_many :categorization_rules, dependent: :destroy
 
   validates :name, presence: true
 end

@@ -15,6 +15,7 @@
             <li><router-link to="/chart-of-accounts" class="font-medium">Chart of Accounts</router-link></li>
             <li><router-link to="/transactions" class="font-medium">Transactions</router-link></li>
             <li><router-link to="/linked-accounts" class="font-medium">🏦 Accounts</router-link></li>
+            <li><router-link to="/rules" class="font-medium">⚡ Rules</router-link></li>
             <li v-if="isAdmin">
               <details>
                 <summary class="font-medium">Admin</summary>

@@ -11,6 +11,7 @@ import AdminSettings from '../views/admin/AdminSettings.vue'
 import AdminInvitations from '../views/admin/AdminInvitations.vue'
 import AcceptInvite from '../views/AcceptInvite.vue'
 import LinkedAccounts from '../views/LinkedAccounts.vue'
+import CategorizationRules from '../views/CategorizationRules.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { guest: true } },
@@ -20,6 +21,7 @@ const routes = [
   { path: '/chart-of-accounts', name: 'ChartOfAccounts', component: ChartOfAccounts, meta: { requiresAuth: true, canEdit: true } },
   { path: '/transactions', name: 'Transactions', component: Transactions, meta: { requiresAuth: true } },
   { path: '/linked-accounts', name: 'LinkedAccounts', component: LinkedAccounts, meta: { requiresAuth: true } },
+  { path: '/rules', name: 'CategorizationRules', component: CategorizationRules, meta: { requiresAuth: true, canEdit: true } },
   
   // Admin routes (executive + manager)
   { path: '/admin/users', name: 'AdminUsers', component: AdminUsers, meta: { requiresAuth: true, requiresAdmin: true } },
