@@ -69,12 +69,7 @@ CompanyUser.find_or_create_by!(user: admin, company: demo) do |cu|
   cu.role = 'executive'
 end
 
-# Seed standard COA
-STANDARD_COA.each do |coa_data|
-  demo.chart_of_accounts.find_or_create_by!(code: coa_data[:code]) do |coa|
-    coa.name = coa_data[:name]
-    coa.account_type = coa_data[:account_type]
-  end
-end
+# Apply universal COA template
+ChartOfAccountTemplates.apply_universal(demo)
 
-puts "Created demo company with #{demo.chart_of_accounts.count} chart of accounts entries"
+puts "Created demo company with #{demo.chart_of_accounts.count} chart of accounts entries (universal template)"

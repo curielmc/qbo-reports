@@ -16,4 +16,13 @@ class Company < ApplicationRecord
   has_many :statement_uploads, dependent: :destroy
 
   validates :name, presence: true
+
+  # Every new company gets the universal Chart of Accounts
+  after_create :apply_default_coa
+
+  private
+
+  def apply_default_coa
+    ChartOfAccountTemplates.apply_universal(self) if chart_of_accounts.empty?
+  end
 end

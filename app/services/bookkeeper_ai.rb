@@ -53,7 +53,7 @@ class BookkeeperAi
     === STATEMENT UPLOADS ===
     - show_uploads: {} → list recent statement uploads and their status
     - import_statement: {upload_id, account_name} → import a parsed statement into an account
-    (Note: file upload happens via the upload button in chat — you handle the post-upload flow)
+    (Note: file upload happens via the 📎 button in chat — you handle the post-upload flow)
 
     When a user mentions uploading a statement, tell them to use the 📎 button below.
     After upload, you'll see the parsed transactions and can help them:
@@ -61,6 +61,19 @@ class BookkeeperAi
     2. Pick or create the right account
     3. Import the transactions
     4. Categorize everything
+
+    === CHART OF ACCOUNTS INTELLIGENCE ===
+    - coa_health_check: {} → analyze if COA needs updates (overused Misc, stale categories, gaps)
+    - suggest_new_categories: {} → AI analyzes uncategorized transactions and suggests new categories to add
+    - apply_category_suggestions: {categories} → create the suggested categories
+    - import_qb_data: {} → user uploaded QuickBooks export, analyze and build matching COA
+    - apply_migration: {plan} → apply the QB→ecfoBooks migration plan
+
+    When a new company is set up, the universal COA is applied automatically.
+    Over time, as transactions come in, you proactively suggest new categories:
+    - "I notice you have 15 transactions from SaaS vendors but no 'Software Subscriptions' category. Want me to create one?"
+    - "Your Miscellaneous category has 30% of transactions. Want me to analyze and suggest better categories?"
+    - If they import QuickBooks data, analyze their old categories and create matching ones.
 
     === JOURNAL ENTRIES ===
     - create_adjustment: {lines, date, memo} → manual adjusting journal entry
@@ -203,6 +216,12 @@ class BookkeeperAi
     # Statements
     when 'show_uploads' then show_uploads
     when 'import_statement' then import_statement(params)
+    # COA Intelligence
+    when 'coa_health_check' then coa_health_check
+    when 'suggest_new_categories' then suggest_new_categories
+    when 'apply_category_suggestions' then apply_category_suggestions(params)
+    when 'import_qb_data' then import_qb_data
+    when 'apply_migration' then apply_migration(params)
     # Journal
     when 'create_adjustment' then create_adjustment(params)
     when 'show_journal' then show_journal(params)
@@ -695,6 +714,77 @@ class BookkeeperAi
       imported: result[:imported],
       categorized: result[:categorized],
       skipped_duplicates: result[:skipped_duplicates]
+    }
+  end
+
+  # ============================================
+  # COA INTELLIGENCE
+  # ============================================
+
+  def coa_health_check
+    analyzer = CoaAnalyzer.new(@company)
+    issues = analyzer.health_check
+    { action: 'coa_health_check', issues: issues, healthy: issues.empty? }
+  end
+
+  def suggest_new_categories
+    analyzer = CoaAnalyzer.new(@company)
+    result = analyzer.suggest_from_transactions
+    {
+      action: 'suggest_new_categories',
+      mappings: result['mappings'] || [],
+      new_categories: result['new_categories'] || []
+    }
+  end
+
+  def apply_category_suggestions(params)
+    categories = params['categories'] || []
+    created = 0
+
+    categories.each do |cat|
+      code = ChartOfAccountTemplates.next_code(@company, cat['account_type'] || 'expense')
+      @company.chart_of_accounts.find_or_create_by!(name: cat['name']) do |coa|
+        coa.account_type = cat['account_type'] || 'expense'
+        coa.code = code
+        coa.active = true
+      end
+      created += 1
+    end
+
+    # Re-run categorization rules
+    auto_categorized = CategorizationRule.auto_categorize(@company)
+
+    { action: 'apply_category_suggestions', created: created, auto_categorized: auto_categorized }
+  end
+
+  def import_qb_data
+    # Look for the most recent parsed statement upload that might be QB data
+    upload = @company.statement_uploads.where(status: 'parsed').order(created_at: :desc).first
+    return { error: 'No parsed data found. Upload a QuickBooks export first (📎 button).' } unless upload
+
+    analyzer = CoaAnalyzer.new(@company)
+    result = analyzer.import_quickbooks_data(
+      upload.raw_data.to_json,
+      upload.filename
+    )
+
+    {
+      action: 'import_qb_data',
+      mappings: result['mappings'] || [],
+      new_categories: result['new_categories'] || [],
+      notes: result['notes'],
+      transactions_found: (result['transactions'] || []).size
+    }
+  end
+
+  def apply_migration(params)
+    analyzer = CoaAnalyzer.new(@company)
+    result = analyzer.apply_migration(params)
+    {
+      action: 'apply_migration',
+      created_categories: result[:created_categories],
+      created_rules: result[:created_rules],
+      auto_categorized: result[:auto_categorized]
     }
   end
 
