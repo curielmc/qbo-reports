@@ -16,6 +16,13 @@ gem 'listen', '~> 3.3'
 # Authentication
 gem 'devise'
 
+# Admin panel
+gem 'activeadmin'
+gem 'sassc-rails' # Required by ActiveAdmin
+
+# JWT for API auth
+gem 'jwt'
+
 # Plaid integration
 gem 'plaid'
 
