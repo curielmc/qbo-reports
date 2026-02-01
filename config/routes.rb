@@ -24,7 +24,16 @@ Rails.application.routes.draw do
           end
         end
         resources :accounts, only: [:index, :create, :update, :destroy]
+        resources :invitations, only: [:index, :create, :destroy] do
+          member do
+            post :resend
+          end
+        end
       end
+
+      # Public invitation endpoints
+      get 'invitations/:token', to: 'invitations#show'
+      post 'invitations/:token/accept', to: 'invitations#accept'
 
       resources :households, only: [:index, :show] do
         resources :accounts, only: [:index, :create, :update, :destroy]
@@ -45,4 +54,5 @@ Rails.application.routes.draw do
   get '/transactions', to: 'home#index'
   get '/login', to: 'home#index'
   get '/admin/*path', to: 'home#index'
+  get '/invite/:token', to: 'home#index'
 end

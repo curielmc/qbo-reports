@@ -8,6 +8,8 @@ import AdminUsers from '../views/admin/AdminUsers.vue'
 import AdminHouseholds from '../views/admin/AdminHouseholds.vue'
 import AdminAccounts from '../views/admin/AdminAccounts.vue'
 import AdminSettings from '../views/admin/AdminSettings.vue'
+import AdminInvitations from '../views/admin/AdminInvitations.vue'
+import AcceptInvite from '../views/AcceptInvite.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { guest: true } },
@@ -21,7 +23,11 @@ const routes = [
   { path: '/admin/users', name: 'AdminUsers', component: AdminUsers, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/households', name: 'AdminHouseholds', component: AdminHouseholds, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/accounts', name: 'AdminAccounts', component: AdminAccounts, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/invitations', name: 'AdminInvitations', component: AdminInvitations, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/settings', name: 'AdminSettings', component: AdminSettings, meta: { requiresAuth: true, requiresExecutive: true } },
+  
+  // Public invitation acceptance
+  { path: '/invite/:token', name: 'AcceptInvite', component: AcceptInvite, meta: { guest: true } },
 ]
 
 const router = createRouter({

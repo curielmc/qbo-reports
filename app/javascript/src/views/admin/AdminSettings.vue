@@ -61,7 +61,7 @@
           <div class="space-y-3">
             <div class="flex justify-between">
               <span class="text-base-content/60">Application</span>
-              <span class="font-mono">QBO Reports v1.0</span>
+              <span class="font-mono">ecfoBooks v1.0</span>
             </div>
             <div class="flex justify-between">
               <span class="text-base-content/60">Framework</span>

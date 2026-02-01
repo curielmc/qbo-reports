@@ -5,8 +5,8 @@
         <div class="flex justify-center mb-4">
           <span class="text-5xl">📊</span>
         </div>
-        <h2 class="card-title text-2xl font-bold justify-center mb-2">QBO Reports</h2>
-        <p class="text-center text-base-content/60 mb-6">Financial reporting dashboard</p>
+        <h2 class="card-title text-2xl font-bold justify-center mb-2">ecfoBooks</h2>
+        <p class="text-center text-base-content/60 mb-6">Your financial command center</p>
         
         <div v-if="error" class="alert alert-error mb-4">
           <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">

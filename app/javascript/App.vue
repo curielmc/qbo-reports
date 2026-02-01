@@ -4,7 +4,7 @@
       <!-- Navbar -->
       <div class="navbar bg-base-100 shadow-lg">
         <div class="flex-1">
-          <a href="/" class="btn btn-ghost text-xl">📊 QBO Reports</a>
+          <a href="/" class="btn btn-ghost text-xl">📊 ecfoBooks</a>
         </div>
         <div class="flex-none">
           <ul class="menu menu-horizontal px-1">
@@ -19,7 +19,8 @@
                   <li><router-link to="/admin/users">Users</router-link></li>
                   <li><router-link to="/admin/households">Households</router-link></li>
                   <li><router-link to="/admin/accounts">Accounts</router-link></li>
-                  <li><router-link to="/admin/settings">Settings</router-link></li>
+                  <li><router-link to="/admin/invitations">Invitations</router-link></li>
+                  <li v-if="authStore.canManage"><router-link to="/admin/settings">Settings</router-link></li>
                 </ul>
               </details>
             </li>
