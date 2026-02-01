@@ -12,8 +12,16 @@ Rails.application.routes.draw do
       delete 'auth/logout', to: 'sessions#destroy'
       get 'auth/me', to: 'sessions#show'
 
+      # Dashboard
+      get 'dashboard', to: 'dashboard#show'
+
       # Admin routes
       namespace :admin do
+        resources :billing, only: [:index, :show, :update], param: :company_id do
+          member do
+            post :reset_credit
+          end
+        end
         resources :users, only: [:index, :create, :update, :destroy]
         resources :companies, only: [:index, :create, :update, :destroy] do
           member do
@@ -68,6 +76,10 @@ Rails.application.routes.draw do
         post 'chat', to: 'chat#create'
         delete 'chat', to: 'chat#destroy'
 
+        # Usage / billing
+        get 'usage', to: 'usage#show'
+        get 'usage/history', to: 'usage#history'
+
         # Statement uploads
         resources :statements, only: [:index] do
           collection do
@@ -103,6 +115,7 @@ Rails.application.routes.draw do
   get '/rules', to: 'home#index'
   get '/chat', to: 'home#index'
   get '/login', to: 'home#index'
+  get '/admin/billing', to: 'home#index'
   get '/admin/*path', to: 'home#index'
   get '/invite/:token', to: 'home#index'
 end

@@ -8,6 +8,7 @@ import AdminUsers from '../views/admin/AdminUsers.vue'
 import AdminCompanies from '../views/admin/AdminCompanies.vue'
 import AdminAccounts from '../views/admin/AdminAccounts.vue'
 import AdminSettings from '../views/admin/AdminSettings.vue'
+import AdminBilling from '../views/admin/AdminBilling.vue'
 import AdminInvitations from '../views/admin/AdminInvitations.vue'
 import AcceptInvite from '../views/AcceptInvite.vue'
 import LinkedAccounts from '../views/LinkedAccounts.vue'
@@ -30,6 +31,7 @@ const routes = [
   { path: '/admin/companies', name: 'AdminCompanies', component: AdminCompanies, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/accounts', name: 'AdminAccounts', component: AdminAccounts, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/invitations', name: 'AdminInvitations', component: AdminInvitations, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/billing', name: 'AdminBilling', component: AdminBilling, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/settings', name: 'AdminSettings', component: AdminSettings, meta: { requiresAuth: true, requiresExecutive: true } },
   
   // Public invitation acceptance

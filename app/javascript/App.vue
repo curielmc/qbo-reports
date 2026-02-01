@@ -32,6 +32,7 @@
                   <li><router-link to="/admin/companies">Companies</router-link></li>
                   <li><router-link to="/admin/accounts">Accounts</router-link></li>
                   <li><router-link to="/admin/invitations">Invitations</router-link></li>
+                  <li><router-link to="/admin/billing">💰 Billing</router-link></li>
                   <li v-if="authStore.canManage"><router-link to="/admin/settings">Settings</router-link></li>
                 </ul>
               </details>

@@ -11,7 +11,7 @@ module Api
         return render json: { error: 'Message required' }, status: :unprocessable_entity if message.blank?
 
         # Save user message
-        user_msg = @company.chat_messages.create!(
+        @company.chat_messages.create!(
           user: current_user,
           role: 'user',
           content: message
@@ -27,7 +27,12 @@ module Api
 
         # Run AI
         ai = BookkeeperAi.new(@company, current_user)
-        result = ai.chat(message, history[0..-2]) # exclude current message (already sent)
+        result = ai.chat(message, history[0..-2])
+
+        # Track usage
+        meter = UsageMeter.new(@company, current_user)
+        action_type = result[:data]&.first&.dig(:action) || result[:data]&.first&.dig('action') || 'chat'
+        meter.track(action_type, summary: message.truncate(100))
 
         # Save assistant response
         assistant_msg = @company.chat_messages.create!(
@@ -37,6 +42,7 @@ module Api
           metadata: { data: result[:data] }
         )
 
+        # Include credit info in response
         render json: {
           message: {
             id: assistant_msg.id,
@@ -44,6 +50,10 @@ module Api
             content: result[:text],
             data: result[:data],
             created_at: assistant_msg.created_at
+          },
+          usage: {
+            credit_remaining: meter.credit_remaining,
+            has_credit: meter.has_credit?
           }
         }
       end
@@ -56,13 +66,21 @@ module Api
           .limit(params[:limit] || 50)
           .reverse
 
-        render json: messages.map { |m|
-          {
-            id: m.id,
-            role: m.role,
-            content: m.content,
-            data: m.metadata&.dig('data'),
-            created_at: m.created_at
+        meter = UsageMeter.new(@company, current_user)
+
+        render json: {
+          messages: messages.map { |m|
+            {
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              data: m.metadata&.dig('data'),
+              created_at: m.created_at
+            }
+          },
+          usage: {
+            credit_remaining: meter.credit_remaining,
+            has_credit: meter.has_credit?
           }
         }
       end

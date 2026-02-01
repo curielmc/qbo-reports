@@ -13,7 +13,11 @@
           <p class="text-xs text-base-content/50">Your AI bookkeeper — ask anything, I'll handle the rest</p>
         </div>
       </div>
-      <div class="flex gap-2">
+      <div class="flex items-center gap-3">
+        <div v-if="creditRemaining !== null" 
+          :class="['badge', creditRemaining > 50 ? 'badge-success' : creditRemaining > 10 ? 'badge-warning' : 'badge-error']">
+          💳 ${{ creditRemaining.toFixed(2) }} credit
+        </div>
         <button @click="clearChat" class="btn btn-ghost btn-sm" title="Clear history">🗑️</button>
       </div>
     </div>
@@ -126,6 +130,7 @@ const messages = ref([])
 const input = ref('')
 const loading = ref(false)
 const uploading = ref(false)
+const creditRemaining = ref(null)
 const messagesContainer = ref(null)
 const inputRef = ref(null)
 const fileInput = ref(null)
@@ -189,6 +194,10 @@ const sendMessage = async (text) => {
         result.message.suggestions = data[0].suggestions
       }
       messages.value.push(result.message)
+    }
+    // Update credit display
+    if (result?.usage) {
+      creditRemaining.value = result.usage.credit_remaining
     }
   } catch (e) {
     messages.value.push({
@@ -281,8 +290,13 @@ const clearChat = async () => {
 }
 
 onMounted(async () => {
-  const history = await apiClient.get(`/api/v1/companies/${companyId()}/chat?limit=50`)
-  if (history) messages.value = history
+  const result = await apiClient.get(`/api/v1/companies/${companyId()}/chat?limit=50`)
+  if (result?.messages) {
+    messages.value = result.messages
+    creditRemaining.value = result.usage?.credit_remaining ?? null
+  } else if (Array.isArray(result)) {
+    messages.value = result  // backwards compat
+  }
   scrollToBottom()
   inputRef.value?.focus()
 })
