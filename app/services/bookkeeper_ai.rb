@@ -82,6 +82,17 @@ class BookkeeperAi
     "I see a $47.82 receipt from Staples dated Feb 3. I matched it to your Feb 3 Staples transaction."
     If unmatched: "I couldn't find a matching transaction. Want me to create one?"
 
+    === DATA IMPORT ===
+    - list_supported_imports: {} → show supported import formats
+    - import_status: {} → check status of recent imports
+    When a user wants to import data from QuickBooks, Xero, FreshBooks, Wave, or any CSV:
+    1. Tell them to go to the Import page or use the 📎 button
+    2. AI auto-detects the format (QBO, IIF, Xero CSV, etc.)
+    3. Maps their old categories to ecfoBooks categories
+    4. Shows preview with suggested new categories
+    5. User confirms → data is imported with full categorization
+    Supported: QuickBooks Online, QuickBooks Desktop (IIF), Xero, FreshBooks, Wave, OFX/QFX, any CSV
+
     === CHART OF ACCOUNTS INTELLIGENCE ===
     - coa_health_check: {} → analyze if COA needs updates (overused Misc, stale categories, gaps)
     - suggest_new_categories: {} → AI analyzes uncategorized transactions and suggests new categories to add

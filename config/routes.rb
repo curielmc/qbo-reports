@@ -102,6 +102,13 @@ Rails.application.routes.draw do
         get 'usage/queries', to: 'usage#queries'
         get 'usage/history', to: 'usage#history'
 
+        # Data import
+        scope :imports do
+          post 'upload', to: 'imports#upload'
+          post 'commit', to: 'imports#commit'
+          get 'supported', to: 'imports#supported'
+        end
+
         # Statement uploads
         resources :statements, only: [:index] do
           collection do
@@ -171,6 +178,7 @@ Rails.application.routes.draw do
   get '/bookkeeper', to: 'home#index'
   get '/reconciliation', to: 'home#index'
   get '/receipts', to: 'home#index'
+  get '/import', to: 'home#index'
   get '/chat', to: 'home#index'
   get '/login', to: 'home#index'
   get '/admin/billing', to: 'home#index'
