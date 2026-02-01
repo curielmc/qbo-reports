@@ -10,7 +10,7 @@ services:
       bundle lock --add-platform x86_64-linux
       bundle config set --local without 'development test'
       bundle install
-      RAILS_ENV=production SECRET_KEY_BASE=dummy DATABASE_URL=nulldb:// bundle exec rake assets:precompile || echo "Asset precompile skipped"
+      bundle exec rake assets:precompile
     startCommand: bundle exec puma -C config/puma.rb
     envVars:
       - key: DATABASE_URL
@@ -19,5 +19,7 @@ services:
         value: 27df8db82cab9b206e5fe2ced05d4ad3
       - key: RAILS_ENV
         value: production
+      - key: SECRET_KEY_BASE
+        value: 674e5412ce984b856cc6234a2ab44cf07f7d3613c61c0de8f804e9bc3659f8f9ee806461c015dcf4dfd15f411933d3bfea4dd2fb13271586f38557052cfa36c5
       - key: RAILS_LOG_TO_STDOUT
         value: "true"
