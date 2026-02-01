@@ -37,6 +37,29 @@ class User < ApplicationRecord
     executive? || manager?
   end
 
+  # Is this user a bookkeeper for any company?
+  def bookkeeper?
+    company_users.bookkeepers.exists? || executive? || manager?
+  end
+
+  # Role in a specific company
+  def role_in(company)
+    return 'owner' if executive?
+    company_users.find_by(company: company)&.role || 'viewer'
+  end
+
+  def bookkeeper_for?(company)
+    return true if executive? || manager?
+    cu = company_users.find_by(company: company)
+    cu&.bookkeeper?
+  end
+
+  def can_edit_in?(company)
+    return true if executive? || manager?
+    cu = company_users.find_by(company: company)
+    cu&.can_edit?
+  end
+
   # Companies this user can access
   def accessible_companies
     return Company.all if global_access?

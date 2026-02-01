@@ -12,13 +12,8 @@ module Api
           token = generate_jwt(user)
           render json: {
             token: token,
-            user: {
-              id: user.id,
-              email: user.email,
-              first_name: user.first_name,
-              last_name: user.last_name,
-              role: user.role
-            }
+            user: format_user(user),
+            companies: user.accessible_companies.map { |c| format_company(c, user) }
           }
         else
           render json: { error: 'Invalid email or password' }, status: :unauthorized
@@ -28,23 +23,39 @@ module Api
       # GET /api/v1/auth/me
       def show
         render json: {
-          user: {
-            id: current_user.id,
-            email: current_user.email,
-            first_name: current_user.first_name,
-            last_name: current_user.last_name,
-            role: current_user.role
-          }
+          user: format_user(current_user),
+          companies: current_user.accessible_companies.map { |c| format_company(c, current_user) }
         }
       end
 
       # DELETE /api/v1/auth/logout
       def destroy
-        # JWT is stateless — client just discards the token
         render json: { message: 'Logged out successfully' }
       end
 
       private
+
+      def format_user(user)
+        {
+          id: user.id,
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          role: user.role,
+          is_bookkeeper: user.bookkeeper?,
+          is_admin: user.admin_access?
+        }
+      end
+
+      def format_company(company, user)
+        {
+          id: company.id,
+          name: company.name,
+          role: user.role_in(company),
+          engagement_type: company.engagement_type,
+          business_type: company.try(:business_type)
+        }
+      end
 
       def generate_jwt(user)
         payload = {

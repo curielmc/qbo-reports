@@ -69,6 +69,26 @@ CompanyUser.find_or_create_by!(user: admin, company: demo) do |cu|
   cu.role = 'executive'
 end
 
+# Create demo admin user
+admin = User.find_or_create_by!(email: 'martin@myecfo.com') do |u|
+  u.first_name = 'Martin'
+  u.last_name = 'Curiel'
+  u.password = 'ecfobooks2026!'
+  u.role = 'executive'
+end
+
+# Create demo company
+demo = Company.find_or_create_by!(name: 'Demo Company') do |c|
+  c.engagement_type = 'flat_fee'
+  c.monthly_fee = 500
+  c.ai_credit_cents = 10000
+end
+
+# Link admin to company
+CompanyUser.find_or_create_by!(user: admin, company: demo) do |cu|
+  cu.role = 'owner'
+end
+
 # Apply universal COA template
 ChartOfAccountTemplates.apply_universal(demo)
 

@@ -13,6 +13,7 @@ test:
 
 production:
   <<: *default
+  url: <%= ENV['DATABASE_URL'] %>
   database: qbo_reports_production
   username: qbo_reports
   password: <%= ENV["QBO_REPORTS_DATABASE_PASSWORD"] %>

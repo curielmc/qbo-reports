@@ -12,12 +12,10 @@ export const useAuthStore = defineStore('auth', () => {
   const isClient = computed(() => user.value?.role === 'client')
   const isViewer = computed(() => user.value?.role === 'viewer')
 
-  // Can see admin panel (users list, all companies)
   const isAdmin = computed(() => isExecutive.value || isManager.value)
-  // Can modify users, settings, system config
   const canManage = computed(() => isExecutive.value)
-  // Can edit financial data
   const canEdit = computed(() => isExecutive.value || isManager.value || isAdvisor.value)
+  const isBookkeeper = computed(() => user.value?.is_bookkeeper || isAdmin.value)
 
   async function login(email, password) {
     const response = await fetch('/api/v1/auth/login', {
@@ -33,7 +31,13 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = data.user
       localStorage.setItem('auth_token', data.token)
       localStorage.setItem('current_user', JSON.stringify(data.user))
-      return { success: true }
+
+      // Store companies
+      if (data.companies) {
+        localStorage.setItem('user_companies', JSON.stringify(data.companies))
+      }
+
+      return { success: true, companies: data.companies }
     } else {
       return { success: false, error: data.error }
     }
@@ -44,12 +48,14 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     localStorage.removeItem('auth_token')
     localStorage.removeItem('current_user')
+    localStorage.removeItem('user_companies')
+    localStorage.removeItem('current_company')
   }
 
   return {
     token, user,
     isAuthenticated, isExecutive, isManager, isAdvisor, isClient, isViewer,
-    isAdmin, canManage, canEdit,
+    isAdmin, canManage, canEdit, isBookkeeper,
     login, logout
   }
 })

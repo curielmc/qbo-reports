@@ -1,0 +1,36 @@
+databases:
+  - name: ecfobooks-db
+    plan: free
+    databaseName: ecfobooks_production
+    user: ecfobooks
+
+services:
+  - type: web
+    plan: free
+    name: ecfobooks
+    runtime: ruby
+    buildCommand: |
+      bundle install
+      yarn install
+      bundle exec rake assets:precompile
+      bundle exec rake db:migrate
+    startCommand: bundle exec puma -C config/puma.rb
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ecfobooks-db
+          property: connectionString
+      - key: RAILS_ENV
+        value: production
+      - key: RAILS_MASTER_KEY
+        sync: false
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PLAID_CLIENT_ID
+        sync: false
+      - key: PLAID_SECRET
+        sync: false
+      - key: PLAID_ENV
+        value: sandbox
