@@ -12,6 +12,17 @@
             <li><router-link to="/reports" class="font-medium">Reports</router-link></li>
             <li><router-link to="/chart-of-accounts" class="font-medium">Chart of Accounts</router-link></li>
             <li><router-link to="/transactions" class="font-medium">Transactions</router-link></li>
+            <li v-if="isAdmin">
+              <details>
+                <summary class="font-medium">Admin</summary>
+                <ul class="bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+                  <li><router-link to="/admin/users">Users</router-link></li>
+                  <li><router-link to="/admin/households">Households</router-link></li>
+                  <li><router-link to="/admin/accounts">Accounts</router-link></li>
+                  <li><router-link to="/admin/settings">Settings</router-link></li>
+                </ul>
+              </details>
+            </li>
           </ul>
           <div class="dropdown dropdown-end">
             <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar placeholder">
@@ -21,7 +32,6 @@
             </div>
             <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
               <li class="menu-title"><span>{{ userName }}</span></li>
-              <li><a href="/admin">Admin Panel</a></li>
               <li><a @click="logout">Logout</a></li>
             </ul>
           </div>
@@ -48,6 +58,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
+const isAdmin = computed(() => authStore.isAdmin)
 const userName = computed(() => {
   const user = authStore.user
   return user ? `${user.first_name} ${user.last_name}` : ''

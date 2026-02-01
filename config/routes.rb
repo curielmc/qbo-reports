@@ -1,11 +1,5 @@
 Rails.application.routes.draw do
-  # ActiveAdmin
-  ActiveAdmin.routes(self)
-  
-  # Devise for admin users
-  devise_for :admin_users, ActiveAdmin::Devise.config
-  
-  # Devise for regular users
+  # Devise for users
   devise_for :users
 
   root 'home#index'
@@ -17,6 +11,20 @@ Rails.application.routes.draw do
       post 'auth/login', to: 'sessions#create'
       delete 'auth/logout', to: 'sessions#destroy'
       get 'auth/me', to: 'sessions#show'
+
+      # Admin routes
+      namespace :admin do
+        resources :users, only: [:index, :create, :update, :destroy]
+        resources :households, only: [:index, :create, :update, :destroy] do
+          member do
+            get :members
+            post :members, action: :add_member
+            put 'members/:user_id', action: :update_member
+            delete 'members/:user_id', action: :remove_member
+          end
+        end
+        resources :accounts, only: [:index, :create, :update, :destroy]
+      end
 
       resources :households, only: [:index, :show] do
         resources :accounts, only: [:index, :create, :update, :destroy]
@@ -36,4 +44,5 @@ Rails.application.routes.draw do
   get '/chart-of-accounts', to: 'home#index'
   get '/transactions', to: 'home#index'
   get '/login', to: 'home#index'
+  get '/admin/*path', to: 'home#index'
 end
