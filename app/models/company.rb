@@ -22,6 +22,8 @@ class Company < ApplicationRecord
   has_many :notifications, dependent: :destroy
   has_many :bookkeeper_tasks, dependent: :destroy
   has_many :month_end_closes, dependent: :destroy
+  has_many :recurring_entries, dependent: :destroy
+  has_many :journal_templates, dependent: :destroy
 
   validates :name, presence: true
 

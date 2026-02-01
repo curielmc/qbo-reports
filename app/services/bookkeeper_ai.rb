@@ -62,6 +62,24 @@ class BookkeeperAi
     3. Import the transactions
     4. Categorize everything
 
+    === JOURNAL ENTRIES & ADJUSTMENTS ===
+    - create_journal_entry_manual: {entry_date, memo, entry_type, lines: [{account_name, debit, credit}]} → create a journal entry
+    - reverse_journal_entry: {entry_id} → reverse a posted entry (flips all debits/credits)
+    - list_journal_entries: {type, limit} → list recent entries, optionally by type
+    - create_recurring_entry: {name, frequency, start_date, lines: [{account_name, debit, credit}]} → recurring entries
+    - list_templates: {} → available templates
+    - use_template: {template_name, amount, date} → create from template
+
+    Entry types: standard, adjusting, closing, reversing, accrual, depreciation
+    Templates: Depreciation, Accrued Expense, Prepaid Amortization, Deferred Revenue,
+    Bad Debt, Owner Distribution, Payroll Accrual, Loan Payment Split
+
+    Guide users conversationally:
+    "I need to record depreciation" → use template, ask for amount/asset
+    "Record an adjusting entry" → help build debit/credit lines
+    "Set up monthly rent as recurring" → create recurring entry
+    Posted entries can't be edited — reverse and re-enter.
+
     === RECONCILIATION ===
     - start_reconciliation: {account_name, statement_date, statement_balance} → begin reconciling an account
     - toggle_cleared: {reconciliation_id, transaction_id} → mark/unmark transaction as cleared
@@ -247,6 +265,13 @@ class BookkeeperAi
     # Statements
     when 'show_uploads' then show_uploads
     when 'import_statement' then import_statement(params)
+    # Journal entries
+    when 'create_journal_entry_manual' then create_journal_entry_manual(params)
+    when 'reverse_journal_entry' then reverse_journal_entry(params)
+    when 'list_journal_entries' then list_journal_entries(params)
+    when 'create_recurring_entry' then create_recurring_entry(params)
+    when 'list_templates' then list_templates
+    when 'use_template' then use_template(params)
     # Reconciliation
     when 'start_reconciliation' then start_reconciliation(params)
     when 'toggle_cleared' then toggle_cleared(params)
@@ -758,7 +783,128 @@ class BookkeeperAi
   end
 
   # ============================================
-  # RECONCILIATION
+  # JOURNAL ENTRIES & ADJUSTMENTS
+  # ============================================
+
+  def create_journal_entry_manual(params)
+    lines_data = (params['lines'] || []).map do |line|
+      coa = resolve_account(line['account_name'])
+      next unless coa
+      { chart_of_account_id: coa.id, debit: line['debit'].to_f, credit: line['credit'].to_f, memo: line['memo'] }
+    end.compact
+
+    return { error: 'Need at least 2 lines for a journal entry' } if lines_data.size < 2
+
+    total_debits = lines_data.sum { |l| l[:debit] }
+    total_credits = lines_data.sum { |l| l[:credit] }
+    unless (total_debits - total_credits).abs < 0.01
+      return { error: "Entry doesn't balance: debits ($#{'%.2f' % total_debits}) ≠ credits ($#{'%.2f' % total_credits})" }
+    end
+
+    entry = JournalEntry.create_adjustment(
+      @company, lines_data,
+      params['entry_date'] || Date.current,
+      params['memo'] || 'Manual adjustment'
+    )
+    entry.update!(entry_type: params['entry_type'] || 'adjusting', posted: true)
+
+    {
+      action: 'create_journal_entry_manual',
+      id: entry.id, entry_date: entry.entry_date, memo: entry.memo,
+      type: entry.entry_type, total: total_debits,
+      lines: entry.journal_lines.map { |l| { account: l.chart_of_account.name, debit: l.debit, credit: l.credit } }
+    }
+  end
+
+  def reverse_journal_entry(params)
+    entry = @company.journal_entries.find(params['entry_id'])
+    reversal = @company.journal_entries.build(
+      entry_date: Date.current, memo: "REVERSAL: #{entry.memo}",
+      source: 'manual', entry_type: 'reversing', posted: true, reversing_entry_id: entry.id
+    )
+    entry.journal_lines.each do |line|
+      reversal.journal_lines.build(
+        chart_of_account: line.chart_of_account,
+        debit: line.credit, credit: line.debit, memo: "Reversal: #{line.memo}"
+      )
+    end
+    reversal.save!
+    entry.update!(reversed: true)
+    { action: 'reverse_journal_entry', original_id: entry.id, reversal_id: reversal.id, memo: reversal.memo }
+  end
+
+  def list_journal_entries(params)
+    entries = @company.journal_entries.includes(journal_lines: :chart_of_account)
+    entries = entries.where(entry_type: params['type']) if params['type']
+    entries = entries.order(entry_date: :desc).limit(params['limit'] || 20)
+    {
+      action: 'list_journal_entries',
+      entries: entries.map { |e|
+        { id: e.id, date: e.entry_date, memo: e.memo, type: e.entry_type,
+          posted: e.posted, reversed: e.reversed,
+          total: e.journal_lines.sum(:debit).round(2), lines_count: e.journal_lines.size }
+      }
+    }
+  end
+
+  def create_recurring_entry(params)
+    lines = (params['lines'] || []).map do |line|
+      coa = resolve_account(line['account_name'])
+      next unless coa
+      { 'chart_of_account_id' => coa.id, 'debit' => line['debit'].to_f, 'credit' => line['credit'].to_f, 'memo' => line['memo'] }
+    end.compact
+
+    recurring = @company.recurring_entries.create!(
+      created_by: @user, name: params['name'], memo: params['memo'],
+      frequency: params['frequency'] || 'monthly',
+      start_date: params['start_date'] || Date.current,
+      next_run_date: params['start_date'] || Date.current,
+      end_date: params['end_date'], auto_post: params['auto_post'] || true, lines: lines
+    )
+    { action: 'create_recurring_entry', id: recurring.id, name: recurring.name,
+      frequency: recurring.frequency, next_run: recurring.next_run_date }
+  end
+
+  def list_templates
+    JournalTemplate.seed_system_templates(@company) unless @company.journal_templates.exists?
+    templates = @company.journal_templates.order(:name)
+    { action: 'list_templates',
+      templates: templates.map { |t| { id: t.id, name: t.name, description: t.description, type: t.entry_type } } }
+  end
+
+  def use_template(params)
+    tmpl = @company.journal_templates.find_by('LOWER(name) LIKE ?', "%#{params['template_name']&.downcase}%")
+    return { error: "Template '#{params['template_name']}' not found" } unless tmpl
+
+    amount = params['amount'].to_f
+    return { error: 'Amount is required' } if amount <= 0
+
+    entry = @company.journal_entries.build(
+      entry_date: params['date'] || Date.current,
+      memo: params['memo'] || tmpl.name, source: 'template', entry_type: tmpl.entry_type, posted: true
+    )
+    (tmpl.lines || []).each do |line|
+      coa = line['chart_of_account_id'] ?
+        @company.chart_of_accounts.find_by(id: line['chart_of_account_id']) :
+        resolve_account(line['account_name'])
+      next unless coa
+      entry.journal_lines.build(
+        chart_of_account: coa,
+        debit: line['side'] == 'debit' ? amount : 0,
+        credit: line['side'] == 'credit' ? amount : 0, memo: line['memo']
+      )
+    end
+    entry.save!
+    { action: 'use_template', template: tmpl.name, entry_id: entry.id, amount: amount }
+  end
+
+  def resolve_account(name)
+    return nil unless name
+    @company.chart_of_accounts.find_by('LOWER(name) LIKE ?', "%#{name.downcase}%")
+  end
+
+  # ============================================
+  # RECONCILIATION (ENHANCED)
   # ============================================
 
   def start_reconciliation(params)

@@ -18,6 +18,7 @@ import Billing from '../views/Billing.vue'
 import Reconciliation from '../views/Reconciliation.vue'
 import Receipts from '../views/Receipts.vue'
 import ImportWizard from '../views/ImportWizard.vue'
+import JournalEntries from '../views/JournalEntries.vue'
 import Chat from '../views/Chat.vue'
 
 const routes = [
@@ -34,6 +35,7 @@ const routes = [
   { path: '/reconciliation', name: 'Reconciliation', component: Reconciliation, meta: { requiresAuth: true } },
   { path: '/receipts', name: 'Receipts', component: Receipts, meta: { requiresAuth: true } },
   { path: '/import', name: 'ImportWizard', component: ImportWizard, meta: { requiresAuth: true } },
+  { path: '/journal', name: 'JournalEntries', component: JournalEntries, meta: { requiresAuth: true } },
   
   // Admin routes (executive + manager)
   { path: '/admin/users', name: 'AdminUsers', component: AdminUsers, meta: { requiresAuth: true, requiresAdmin: true } },

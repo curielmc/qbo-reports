@@ -152,6 +152,22 @@ Rails.application.routes.draw do
         # Audit logs
         resources :audit_logs, only: [:index]
 
+        # Journal entries
+        resources :journal_entries, only: [:index, :show, :create, :update, :destroy] do
+          member do
+            post :post_entry
+            post :reverse
+          end
+          collection do
+            get :recurring_index
+            post :create_recurring
+            post :process_recurring
+            get :templates
+            post :from_template
+          end
+        end
+        post 'journal_entries/recurring/:id/run', to: 'journal_entries#run_recurring'
+
         # Reports (all driven by general ledger / journal entries)
         get 'reports/profit_loss', to: 'reports#profit_loss'
         get 'reports/balance_sheet', to: 'reports#balance_sheet'
@@ -179,6 +195,7 @@ Rails.application.routes.draw do
   get '/reconciliation', to: 'home#index'
   get '/receipts', to: 'home#index'
   get '/import', to: 'home#index'
+  get '/journal', to: 'home#index'
   get '/chat', to: 'home#index'
   get '/login', to: 'home#index'
   get '/admin/billing', to: 'home#index'
