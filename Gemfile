@@ -20,7 +20,7 @@ gem 'devise'
 gem 'jwt'
 
 # Plaid integration
-gem 'plaid'
+gem 'plaid', '~> 29.0'
 
 # PDF generation for reports
 gem 'wicked_pdf'

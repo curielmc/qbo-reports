@@ -10,6 +10,7 @@ import AdminAccounts from '../views/admin/AdminAccounts.vue'
 import AdminSettings from '../views/admin/AdminSettings.vue'
 import AdminInvitations from '../views/admin/AdminInvitations.vue'
 import AcceptInvite from '../views/AcceptInvite.vue'
+import LinkedAccounts from '../views/LinkedAccounts.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { guest: true } },
@@ -18,6 +19,7 @@ const routes = [
   { path: '/reports', name: 'Reports', component: Reports, meta: { requiresAuth: true } },
   { path: '/chart-of-accounts', name: 'ChartOfAccounts', component: ChartOfAccounts, meta: { requiresAuth: true, canEdit: true } },
   { path: '/transactions', name: 'Transactions', component: Transactions, meta: { requiresAuth: true } },
+  { path: '/linked-accounts', name: 'LinkedAccounts', component: LinkedAccounts, meta: { requiresAuth: true } },
   
   // Admin routes (executive + manager)
   { path: '/admin/users', name: 'AdminUsers', component: AdminUsers, meta: { requiresAuth: true, requiresAdmin: true } },

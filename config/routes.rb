@@ -31,6 +31,16 @@ Rails.application.routes.draw do
         end
       end
 
+      # Plaid
+      scope :plaid do
+        post 'create_link_token', to: 'plaid#create_link_token'
+        post 'exchange_token', to: 'plaid#exchange_token'
+        post 'sync_transactions', to: 'plaid#sync_transactions'
+        post 'refresh_balances', to: 'plaid#refresh_balances'
+        get 'items', to: 'plaid#items'
+        delete 'items/:id', to: 'plaid#remove_item'
+      end
+
       # Public invitation endpoints
       get 'invitations/:token', to: 'invitations#show'
       post 'invitations/:token/accept', to: 'invitations#accept'
@@ -52,6 +62,7 @@ Rails.application.routes.draw do
   get '/reports', to: 'home#index'
   get '/chart-of-accounts', to: 'home#index'
   get '/transactions', to: 'home#index'
+  get '/linked-accounts', to: 'home#index'
   get '/login', to: 'home#index'
   get '/admin/*path', to: 'home#index'
   get '/invite/:token', to: 'home#index'
