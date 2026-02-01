@@ -1,13 +1,23 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiClient } from '../api/client'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('auth_token') || null)
   const user = ref(JSON.parse(localStorage.getItem('current_user') || 'null'))
 
   const isAuthenticated = computed(() => !!token.value)
-  const isAdmin = computed(() => user.value?.role === 'admin' || user.value?.role === 'executive')
+  const isExecutive = computed(() => user.value?.role === 'executive')
+  const isManager = computed(() => user.value?.role === 'manager')
+  const isAdvisor = computed(() => user.value?.role === 'advisor')
+  const isClient = computed(() => user.value?.role === 'client')
+  const isViewer = computed(() => user.value?.role === 'viewer')
+
+  // Can see admin panel (users list, all households)
+  const isAdmin = computed(() => isExecutive.value || isManager.value)
+  // Can modify users, settings, system config
+  const canManage = computed(() => isExecutive.value)
+  // Can edit financial data
+  const canEdit = computed(() => isExecutive.value || isManager.value || isAdvisor.value)
 
   async function login(email, password) {
     const response = await fetch('/api/v1/auth/login', {
@@ -36,5 +46,10 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('current_user')
   }
 
-  return { token, user, isAuthenticated, isAdmin, login, logout }
+  return {
+    token, user,
+    isAuthenticated, isExecutive, isManager, isAdvisor, isClient, isViewer,
+    isAdmin, canManage, canEdit,
+    login, logout
+  }
 })

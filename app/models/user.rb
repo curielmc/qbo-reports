@@ -3,28 +3,66 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable
 
   enum role: { 
-    admin: 'admin', 
     executive: 'executive',
+    manager: 'manager',
     advisor: 'advisor', 
-    client: 'client' 
+    client: 'client',
+    viewer: 'viewer'
   }
 
   has_many :household_users, dependent: :destroy
   has_many :households, through: :household_users
-  has_many :advisor_households, -> { where(household_users: { role: 'advisor' }) }, 
-           through: :household_users, source: :household
-  has_many :client_households, -> { where(household_users: { role: 'client' }) }, 
-           through: :household_users, source: :household
 
   validates :role, presence: true
 
+  # --- Permission helpers ---
+
+  # Can see all households?
+  def global_access?
+    executive? || manager?
+  end
+
+  # Can modify system settings and manage user roles?
+  def admin_access?
+    executive?
+  end
+
+  # Can create/edit/delete data?
+  def can_edit?
+    executive? || manager? || advisor?
+  end
+
+  # Can see all users?
+  def can_see_users?
+    executive? || manager?
+  end
+
+  # Households this user can access
   def accessible_households
-    return Household.all if admin? || executive?
+    return Household.all if global_access?
     households
   end
 
   def can_manage_household?(household)
-    return true if admin? || executive?
+    return true if global_access?
     households.include?(household)
+  end
+
+  # Can this user edit data in a household?
+  def can_edit_household?(household)
+    return true if executive?
+    return true if manager? # limited edit
+    return true if advisor? && households.include?(household)
+    false
+  end
+
+  # Can this user manage other users?
+  def can_manage_users?
+    executive?
+  end
+
+  # Can this user view reports?
+  def can_view_reports?(household)
+    can_manage_household?(household)
   end
 end

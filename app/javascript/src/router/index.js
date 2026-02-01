@@ -14,14 +14,14 @@ const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
   { path: '/dashboard', redirect: '/' },
   { path: '/reports', name: 'Reports', component: Reports, meta: { requiresAuth: true } },
-  { path: '/chart-of-accounts', name: 'ChartOfAccounts', component: ChartOfAccounts, meta: { requiresAuth: true } },
+  { path: '/chart-of-accounts', name: 'ChartOfAccounts', component: ChartOfAccounts, meta: { requiresAuth: true, canEdit: true } },
   { path: '/transactions', name: 'Transactions', component: Transactions, meta: { requiresAuth: true } },
   
-  // Admin routes
+  // Admin routes (executive + manager)
   { path: '/admin/users', name: 'AdminUsers', component: AdminUsers, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/households', name: 'AdminHouseholds', component: AdminHouseholds, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/accounts', name: 'AdminAccounts', component: AdminAccounts, meta: { requiresAuth: true, requiresAdmin: true } },
-  { path: '/admin/settings', name: 'AdminSettings', component: AdminSettings, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/settings', name: 'AdminSettings', component: AdminSettings, meta: { requiresAuth: true, requiresExecutive: true } },
 ]
 
 const router = createRouter({
@@ -32,11 +32,17 @@ const router = createRouter({
 router.beforeEach((to) => {
   const token = localStorage.getItem('auth_token')
   const user = JSON.parse(localStorage.getItem('current_user') || 'null')
+  const role = user?.role
 
   if (to.meta.requiresAuth && !token) {
     return { name: 'Login' }
   }
-  if (to.meta.requiresAdmin && user?.role !== 'admin' && user?.role !== 'executive') {
+  // Executive + Manager can see admin
+  if (to.meta.requiresAdmin && role !== 'executive' && role !== 'manager') {
+    return { name: 'Dashboard' }
+  }
+  // Only executive can access settings
+  if (to.meta.requiresExecutive && role !== 'executive') {
     return { name: 'Dashboard' }
   }
   if (to.meta.guest && token) {

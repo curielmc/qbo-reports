@@ -5,7 +5,7 @@
         <h1 class="text-3xl font-bold">User Management</h1>
         <p class="text-base-content/60 mt-1">Manage system users and permissions</p>
       </div>
-      <button @click="openModal()" class="btn btn-primary gap-2">
+      <button v-if="authStore.canManage" @click="openModal()" class="btn btn-primary gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -68,7 +68,7 @@
                 <td>{{ user.household_count || 0 }}</td>
                 <td class="text-sm text-base-content/60">{{ formatDate(user.created_at) }}</td>
                 <td class="text-right">
-                  <div class="dropdown dropdown-end">
+                  <div v-if="authStore.canManage" class="dropdown dropdown-end">
                     <div tabindex="0" role="button" class="btn btn-ghost btn-xs">⋮</div>
                     <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-40">
                       <li><a @click="openModal(user)">Edit</a></li>
@@ -76,6 +76,7 @@
                       <li><a @click="deleteUser(user)" class="text-error">Delete</a></li>
                     </ul>
                   </div>
+                  <span v-else class="text-base-content/40 text-xs">View only</span>
                 </td>
               </tr>
             </tbody>
@@ -129,15 +130,17 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '../../stores/auth'
 import { apiClient } from '../../api/client'
 
+const authStore = useAuthStore()
 const users = ref([])
 const search = ref('')
 const roleFilter = ref('')
 const showModal = ref(false)
 const editing = ref(null)
 const saving = ref(false)
-const roles = ['admin', 'executive', 'advisor', 'client']
+const roles = ['executive', 'manager', 'advisor', 'client', 'viewer']
 const form = ref({ first_name: '', last_name: '', email: '', role: 'client', password: '' })
 
 const filteredUsers = computed(() => {
@@ -160,7 +163,7 @@ const roleCounts = computed(() =>
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 const initials = (u) => `${(u.first_name||'')[0]||''}${(u.last_name||'')[0]||''}`.toUpperCase()
 const formatDate = (d) => d ? new Date(d).toLocaleDateString() : ''
-const roleBadge = (r) => ({ admin: 'badge-error', executive: 'badge-warning', advisor: 'badge-info', client: 'badge-success' }[r] || 'badge-ghost')
+const roleBadge = (r) => ({ executive: 'badge-error', manager: 'badge-warning', advisor: 'badge-info', client: 'badge-success', viewer: 'badge-ghost' }[r] || 'badge-ghost')
 
 const openModal = (user = null) => {
   editing.value = user
