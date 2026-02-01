@@ -15,6 +15,11 @@ class Company < ApplicationRecord
   has_many :journal_entries, dependent: :destroy
   has_many :statement_uploads, dependent: :destroy
   has_many :ai_queries, dependent: :destroy
+  has_many :reconciliations, dependent: :destroy
+  has_many :receipts, dependent: :destroy
+  has_many :invitations, dependent: :destroy
+  has_many :audit_logs, dependent: :destroy
+  has_many :notifications, dependent: :destroy
 
   validates :name, presence: true
 

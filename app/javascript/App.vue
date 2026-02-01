@@ -12,7 +12,16 @@
           <ul class="menu menu-horizontal px-1">
             <li><router-link to="/" class="font-medium">💬 Chat</router-link></li>
             <li><router-link to="/dashboard" class="font-medium">📊 Dashboard</router-link></li>
+            <li><router-link to="/reconciliation" class="font-medium">🔄 Reconcile</router-link></li>
+            <li><router-link to="/receipts" class="font-medium">🧾 Receipts</router-link></li>
             <li><router-link to="/billing" class="font-medium">💰 Billing</router-link></li>
+            <!-- Notification Bell -->
+            <li>
+              <button @click="showNotifications = !showNotifications" class="relative">
+                🔔
+                <span v-if="unreadCount > 0" class="badge badge-error badge-xs absolute -top-1 -right-1">{{ unreadCount }}</span>
+              </button>
+            </li>
             <li>
               <details>
                 <summary class="font-medium">Browse</summary>

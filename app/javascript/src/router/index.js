@@ -14,6 +14,8 @@ import AcceptInvite from '../views/AcceptInvite.vue'
 import LinkedAccounts from '../views/LinkedAccounts.vue'
 import CategorizationRules from '../views/CategorizationRules.vue'
 import Billing from '../views/Billing.vue'
+import Reconciliation from '../views/Reconciliation.vue'
+import Receipts from '../views/Receipts.vue'
 import Chat from '../views/Chat.vue'
 
 const routes = [
@@ -27,6 +29,8 @@ const routes = [
   { path: '/linked-accounts', name: 'LinkedAccounts', component: LinkedAccounts, meta: { requiresAuth: true } },
   { path: '/rules', name: 'CategorizationRules', component: CategorizationRules, meta: { requiresAuth: true, canEdit: true } },
   { path: '/billing', name: 'Billing', component: Billing, meta: { requiresAuth: true } },
+  { path: '/reconciliation', name: 'Reconciliation', component: Reconciliation, meta: { requiresAuth: true } },
+  { path: '/receipts', name: 'Receipts', component: Receipts, meta: { requiresAuth: true } },
   
   // Admin routes (executive + manager)
   { path: '/admin/users', name: 'AdminUsers', component: AdminUsers, meta: { requiresAuth: true, requiresAdmin: true } },

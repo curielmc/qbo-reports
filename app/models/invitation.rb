@@ -1,52 +1,41 @@
 class Invitation < ApplicationRecord
-  belongs_to :company, optional: true
+  belongs_to :company
   belongs_to :invited_by, class_name: 'User'
 
+  before_create :generate_token
+  before_create :set_expiry
+
+  ROLES = %w[owner bookkeeper editor viewer].freeze
+
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
-  validates :token, presence: true, uniqueness: true
-  validates :role, presence: true, inclusion: { in: %w[executive manager advisor client viewer] }
-  validates :expires_at, presence: true
+  validates :role, inclusion: { in: ROLES }
 
-  before_validation :generate_token, on: :create
-  before_validation :set_expiration, on: :create
+  scope :pending, -> { where(status: 'pending').where('expires_at > ?', Time.current) }
+  scope :expired, -> { where(status: 'pending').where('expires_at <= ?', Time.current) }
 
-  scope :pending, -> { where(accepted_at: nil).where('expires_at > ?', Time.current) }
-  scope :expired, -> { where(accepted_at: nil).where('expires_at <= ?', Time.current) }
-  scope :accepted, -> { where.not(accepted_at: nil) }
+  def accept!(user)
+    return false if status != 'pending' || expires_at < Time.current
 
-  def pending?
-    accepted_at.nil? && expires_at > Time.current
+    transaction do
+      update!(status: 'accepted', accepted_at: Time.current)
+      CompanyUser.find_or_create_by!(company: company, user: user) do |cu|
+        cu.role = role
+      end
+    end
+    true
   end
 
   def expired?
-    accepted_at.nil? && expires_at <= Time.current
-  end
-
-  def accepted?
-    accepted_at.present?
-  end
-
-  def accept!(user)
-    update!(accepted_at: Time.current)
-    # Add user to company if specified
-    if company.present?
-      CompanyUser.find_or_create_by!(user: user, company: company) do |hu|
-        hu.role = role == 'client' ? 'client' : 'advisor'
-      end
-    end
-  end
-
-  def invite_url
-    "#{ENV['APP_URL'] || 'http://localhost:6000'}/invite/#{token}"
+    expires_at < Time.current
   end
 
   private
 
   def generate_token
-    self.token ||= SecureRandom.urlsafe_base64(32)
+    self.token = SecureRandom.urlsafe_base64(32)
   end
 
-  def set_expiration
+  def set_expiry
     self.expires_at ||= 7.days.from_now
   end
 end

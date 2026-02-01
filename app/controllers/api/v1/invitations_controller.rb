@@ -2,80 +2,94 @@ module Api
   module V1
     class InvitationsController < ApplicationController
       skip_before_action :verify_authenticity_token
+      before_action :authenticate_user!, except: [:accept]
+      before_action :set_company, except: [:accept]
 
-      # GET /api/v1/invitations/:token
-      # Public - returns invitation details for the setup form
-      def show
-        invitation = Invitation.find_by!(token: params[:token])
+      # POST /api/v1/companies/:company_id/invitations
+      def create
+        invitation = @company.invitations.create!(
+          invited_by: current_user,
+          email: params[:email],
+          role: params[:role] || 'viewer'
+        )
 
-        if invitation.accepted?
-          render json: { error: 'This invitation has already been used', status: 'accepted' }, status: :gone
-        elsif invitation.expired?
-          render json: { error: 'This invitation has expired', status: 'expired' }, status: :gone
-        else
-          render json: {
+        # TODO: Send invitation email
+        # InvitationMailer.invite(invitation).deliver_later
+
+        AuditLog.record!(
+          company: @company, user: current_user,
+          action: 'invitation_sent', resource: invitation,
+          changes: { email: params[:email], role: params[:role] }
+        )
+
+        render json: {
+          invitation: {
+            id: invitation.id,
             email: invitation.email,
-            first_name: invitation.first_name,
-            last_name: invitation.last_name,
             role: invitation.role,
-            company_name: invitation.company&.name,
-            personal_message: invitation.personal_message,
-            status: 'pending'
+            status: invitation.status,
+            expires_at: invitation.expires_at,
+            invite_url: "#{request.base_url}/invite/#{invitation.token}"
           }
-        end
-      rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Invalid invitation link' }, status: :not_found
+        }
+      end
+
+      # GET /api/v1/companies/:company_id/invitations
+      def index
+        invitations = @company.invitations.order(created_at: :desc)
+        render json: invitations.map { |i|
+          {
+            id: i.id,
+            email: i.email,
+            role: i.role,
+            status: i.status,
+            invited_by: i.invited_by.name,
+            created_at: i.created_at,
+            expires_at: i.expires_at
+          }
+        }
       end
 
       # POST /api/v1/invitations/:token/accept
-      # Public - creates user account from invitation
       def accept
         invitation = Invitation.find_by!(token: params[:token])
 
-        if invitation.accepted?
-          render json: { error: 'This invitation has already been used' }, status: :gone
-          return
-        end
-
         if invitation.expired?
-          render json: { error: 'This invitation has expired' }, status: :gone
-          return
+          return render json: { error: 'Invitation has expired' }, status: :gone
         end
 
-        user = User.new(
-          email: invitation.email,
-          first_name: params[:first_name] || invitation.first_name,
-          last_name: params[:last_name] || invitation.last_name,
-          password: params[:password],
-          password_confirmation: params[:password_confirmation],
-          role: invitation.role
-        )
+        if invitation.status != 'pending'
+          return render json: { error: 'Invitation already used' }, status: :unprocessable_entity
+        end
 
-        if user.save
-          invitation.accept!(user)
-
-          # Auto-login: generate JWT token
-          token = JWT.encode(
-            { user_id: user.id, email: user.email, role: user.role, exp: 24.hours.from_now.to_i },
-            Rails.application.credentials.secret_key_base
-          )
-
-          render json: {
-            message: 'Account created successfully',
-            token: token,
-            user: {
-              id: user.id,
-              email: user.email,
-              first_name: user.first_name,
-              last_name: user.last_name,
-              role: user.role
-            }
-          }, status: :created
+        # If user is logged in, accept directly
+        if current_user
+          invitation.accept!(current_user)
+          render json: { message: "Welcome to #{invitation.company.name}!", company_id: invitation.company.id }
         else
-          render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+          # Return invitation details for signup/login flow
+          render json: {
+            invitation: {
+              email: invitation.email,
+              company_name: invitation.company.name,
+              role: invitation.role,
+              requires_login: true
+            }
+          }
         end
-      rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Invalid invitation link' }, status: :not_found
+      end
+
+      # DELETE /api/v1/companies/:company_id/invitations/:id
+      def destroy
+        invitation = @company.invitations.find(params[:id])
+        invitation.update!(status: 'revoked')
+        render json: { message: 'Invitation revoked' }
+      end
+
+      private
+
+      def set_company
+        @company = current_user.accessible_companies.find(params[:company_id])
       end
     end
   end

@@ -62,6 +62,26 @@ class BookkeeperAi
     3. Import the transactions
     4. Categorize everything
 
+    === RECONCILIATION ===
+    - start_reconciliation: {account_name, statement_date, statement_balance} → begin reconciling an account
+    - toggle_cleared: {reconciliation_id, transaction_id} → mark/unmark transaction as cleared
+    - suggest_clears: {reconciliation_id} → AI suggests which transactions to clear
+    - finish_reconciliation: {reconciliation_id} → finalize when difference is zero
+    - reconciliation_history: {account_name} → past reconciliations for an account
+
+    Walk them through it conversationally:
+    "Let's reconcile your Chase checking. What's the ending balance on your statement?"
+    Then show uncleared transactions and help them check off the ones that match.
+
+    === RECEIPTS ===
+    - list_receipts: {status} → show pending/matched/unmatched receipts
+    - match_receipt: {receipt_id, transaction_id} → manually match receipt to transaction
+    (Receipt upload happens via 📎 button — AI auto-parses and auto-matches)
+
+    When a receipt is uploaded, tell them what you found:
+    "I see a $47.82 receipt from Staples dated Feb 3. I matched it to your Feb 3 Staples transaction."
+    If unmatched: "I couldn't find a matching transaction. Want me to create one?"
+
     === CHART OF ACCOUNTS INTELLIGENCE ===
     - coa_health_check: {} → analyze if COA needs updates (overused Misc, stale categories, gaps)
     - suggest_new_categories: {} → AI analyzes uncategorized transactions and suggests new categories to add
@@ -216,6 +236,15 @@ class BookkeeperAi
     # Statements
     when 'show_uploads' then show_uploads
     when 'import_statement' then import_statement(params)
+    # Reconciliation
+    when 'start_reconciliation' then start_reconciliation(params)
+    when 'toggle_cleared' then toggle_cleared(params)
+    when 'suggest_clears' then suggest_clears(params)
+    when 'finish_reconciliation' then finish_reconciliation(params)
+    when 'reconciliation_history' then reconciliation_history(params)
+    # Receipts
+    when 'list_receipts' then list_receipts(params)
+    when 'match_receipt' then match_receipt(params)
     # COA Intelligence
     when 'coa_health_check' then coa_health_check
     when 'suggest_new_categories' then suggest_new_categories
@@ -715,6 +744,85 @@ class BookkeeperAi
       categorized: result[:categorized],
       skipped_duplicates: result[:skipped_duplicates]
     }
+  end
+
+  # ============================================
+  # RECONCILIATION
+  # ============================================
+
+  def start_reconciliation(params)
+    account = @company.accounts.find_by('LOWER(name) LIKE ?', "%#{params['account_name']&.downcase}%")
+    return { error: "Account '#{params['account_name']}' not found" } unless account
+
+    svc = ReconciliationService.new(@company, @user)
+    result = svc.start(
+      account_id: account.id,
+      statement_date: params['statement_date'] || Date.current,
+      statement_balance: params['statement_balance'].to_f
+    )
+    {
+      action: 'start_reconciliation',
+      reconciliation_id: result[:reconciliation].id,
+      account: account.name,
+      statement_balance: result[:reconciliation].statement_balance,
+      uncleared_count: result[:uncleared_count],
+      uncleared_total: result[:uncleared_total],
+      transactions: result[:uncleared_transactions].limit(30).map { |t|
+        { id: t.id, date: t.date, description: t.description || t.merchant_name, amount: t.amount }
+      }
+    }
+  end
+
+  def toggle_cleared(params)
+    svc = ReconciliationService.new(@company, @user)
+    svc.toggle_cleared(
+      reconciliation_id: params['reconciliation_id'],
+      transaction_id: params['transaction_id']
+    )
+  end
+
+  def suggest_clears(params)
+    svc = ReconciliationService.new(@company, @user)
+    svc.suggest_clears(reconciliation_id: params['reconciliation_id'])
+  end
+
+  def finish_reconciliation(params)
+    svc = ReconciliationService.new(@company, @user)
+    svc.finish(reconciliation_id: params['reconciliation_id'])
+  end
+
+  def reconciliation_history(params)
+    account = @company.accounts.find_by('LOWER(name) LIKE ?', "%#{params['account_name']&.downcase}%")
+    return { error: "Account not found" } unless account
+
+    svc = ReconciliationService.new(@company, @user)
+    { action: 'reconciliation_history', account: account.name, history: svc.history(account_id: account.id) }
+  end
+
+  # ============================================
+  # RECEIPTS
+  # ============================================
+
+  def list_receipts(params)
+    receipts = @company.receipts.order(created_at: :desc).limit(20)
+    receipts = receipts.where(status: params['status']) if params['status']
+
+    {
+      action: 'list_receipts',
+      receipts: receipts.map { |r|
+        {
+          id: r.id, vendor: r.vendor, amount: r.amount, date: r.receipt_date,
+          status: r.status, matched_transaction_id: r.transaction_id
+        }
+      }
+    }
+  end
+
+  def match_receipt(params)
+    receipt = @company.receipts.find(params['receipt_id'])
+    txn = @company.transactions.find(params['transaction_id'])
+    receipt.match_to!(txn)
+    { action: 'match_receipt', receipt_id: receipt.id, transaction_id: txn.id, status: 'matched' }
   end
 
   # ============================================

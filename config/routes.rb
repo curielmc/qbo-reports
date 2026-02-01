@@ -98,6 +98,38 @@ Rails.application.routes.draw do
           end
         end
 
+        # Reconciliation
+        resources :reconciliations, only: [:index, :show, :create] do
+          member do
+            patch :toggle
+            patch :suggest
+            patch :finish
+          end
+        end
+
+        # Receipts
+        resources :receipts, only: [:index, :create] do
+          member do
+            patch :match
+          end
+        end
+
+        # Invitations
+        resources :invitations, only: [:index, :create, :destroy]
+
+        # Notifications
+        resources :notifications, only: [:index] do
+          member do
+            patch :mark_read
+          end
+          collection do
+            post :read_all
+          end
+        end
+
+        # Audit logs
+        resources :audit_logs, only: [:index]
+
         # Reports (all driven by general ledger / journal entries)
         get 'reports/profit_loss', to: 'reports#profit_loss'
         get 'reports/balance_sheet', to: 'reports#balance_sheet'
@@ -121,6 +153,8 @@ Rails.application.routes.draw do
   get '/linked-accounts', to: 'home#index'
   get '/rules', to: 'home#index'
   get '/billing', to: 'home#index'
+  get '/reconciliation', to: 'home#index'
+  get '/receipts', to: 'home#index'
   get '/chat', to: 'home#index'
   get '/login', to: 'home#index'
   get '/admin/billing', to: 'home#index'
