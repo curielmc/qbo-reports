@@ -1,68 +1,53 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-8">
+    <div class="flex justify-between items-center mb-6">
       <div>
         <h1 class="text-3xl font-bold">Chart of Accounts</h1>
-        <p class="text-base-content/60 mt-1">Manage your account structure</p>
+        <p class="text-base-content/60 mt-1">{{ accounts.length }} accounts</p>
       </div>
-      <button @click="showAddModal = true" class="btn btn-primary gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Add Account
-      </button>
+      <div class="flex gap-2">
+        <a :href="`/api/v1/companies/${companyId}/exports/chart_of_accounts`" class="btn btn-outline btn-sm gap-1">📥 CSV</a>
+        <button @click="openModal()" class="btn btn-primary btn-sm gap-1">+ New Account</button>
+      </div>
     </div>
 
-    <!-- Filter by type -->
+    <!-- Type Tabs -->
     <div class="tabs tabs-boxed mb-6">
-      <a 
-        v-for="type in accountTypes" 
-        :key="type"
-        @click="filterType = type"
-        :class="['tab', filterType === type ? 'tab-active' : '']"
-      >
-        {{ type === 'all' ? 'All' : capitalize(type) }}
+      <a :class="['tab', activeType === 'all' ? 'tab-active' : '']" @click="activeType = 'all'">All</a>
+      <a v-for="t in types" :key="t" :class="['tab', activeType === t ? 'tab-active' : '']" @click="activeType = t">
+        {{ t.charAt(0).toUpperCase() + t.slice(1) }}
+        <span class="badge badge-sm ml-1">{{ countByType(t) }}</span>
       </a>
     </div>
 
-    <!-- Accounts Table -->
-    <div class="card bg-base-100 shadow-xl">
+    <!-- Accounts by Type -->
+    <div v-for="type in visibleTypes" :key="type" class="card bg-base-100 shadow mb-6">
       <div class="card-body">
+        <h2 class="card-title capitalize">{{ type }}</h2>
         <div class="overflow-x-auto">
-          <table class="table table-zebra">
+          <table class="table table-sm">
             <thead>
               <tr>
                 <th>Code</th>
                 <th>Name</th>
-                <th>Type</th>
-                <th>Status</th>
+                <th class="text-right">Transactions</th>
+                <th>Active</th>
                 <th class="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="account in filteredAccounts" :key="account.id">
-                <td class="font-mono">{{ account.code }}</td>
-                <td class="font-medium">{{ account.name }}</td>
+              <tr v-for="acct in accountsByType(type)" :key="acct.id" class="hover">
+                <td class="font-mono text-sm">{{ acct.code }}</td>
+                <td class="font-medium">{{ acct.name }}</td>
+                <td class="text-right font-mono text-sm">{{ acct.transactions_count }}</td>
                 <td>
-                  <span :class="['badge', typeBadgeClass(account.account_type)]">
-                    {{ capitalize(account.account_type) }}
-                  </span>
-                </td>
-                <td>
-                  <span :class="['badge', account.active ? 'badge-success' : 'badge-ghost']">
-                    {{ account.active ? 'Active' : 'Inactive' }}
+                  <span :class="['badge badge-xs', acct.active ? 'badge-success' : 'badge-error']">
+                    {{ acct.active ? 'Active' : 'Inactive' }}
                   </span>
                 </td>
                 <td class="text-right">
-                  <button @click="editAccount(account)" class="btn btn-ghost btn-xs">Edit</button>
-                  <button @click="toggleActive(account)" class="btn btn-ghost btn-xs">
-                    {{ account.active ? 'Deactivate' : 'Activate' }}
-                  </button>
-                </td>
-              </tr>
-              <tr v-if="filteredAccounts.length === 0">
-                <td colspan="5" class="text-center py-8 text-base-content/50">
-                  No accounts found. Add your first account to get started.
+                  <button @click="openModal(acct)" class="btn btn-ghost btn-xs">Edit</button>
+                  <button v-if="acct.transactions_count === 0" @click="deleteAccount(acct)" class="btn btn-ghost btn-xs text-error">Delete</button>
                 </td>
               </tr>
             </tbody>
@@ -71,38 +56,39 @@
       </div>
     </div>
 
-    <!-- Add/Edit Modal -->
-    <dialog :class="['modal', showAddModal ? 'modal-open' : '']">
+    <!-- Modal -->
+    <dialog :class="['modal', showModal ? 'modal-open' : '']">
       <div class="modal-box">
-        <h3 class="font-bold text-lg mb-4">{{ editingAccount ? 'Edit Account' : 'New Account' }}</h3>
+        <h3 class="font-bold text-lg mb-4">{{ editing ? 'Edit Account' : 'New Account' }}</h3>
         <form @submit.prevent="saveAccount">
-          <div class="form-control mb-4">
+          <div class="form-control mb-3">
             <label class="label"><span class="label-text">Code</span></label>
-            <input v-model="form.code" type="text" class="input input-bordered" required />
+            <input v-model="form.code" type="text" class="input input-bordered" placeholder="e.g. 4010" />
           </div>
-          <div class="form-control mb-4">
+          <div class="form-control mb-3">
             <label class="label"><span class="label-text">Name</span></label>
-            <input v-model="form.name" type="text" class="input input-bordered" required />
+            <input v-model="form.name" type="text" class="input input-bordered" placeholder="e.g. Office Supplies" required />
           </div>
-          <div class="form-control mb-4">
+          <div class="form-control mb-3">
             <label class="label"><span class="label-text">Type</span></label>
-            <select v-model="form.account_type" class="select select-bordered">
-              <option value="asset">Asset</option>
-              <option value="liability">Liability</option>
-              <option value="equity">Equity</option>
-              <option value="income">Income</option>
-              <option value="expense">Expense</option>
+            <select v-model="form.account_type" class="select select-bordered" required>
+              <option value="">Select type...</option>
+              <option v-for="t in types" :key="t" :value="t">{{ t }}</option>
             </select>
           </div>
+          <div class="form-control mb-3">
+            <label class="label cursor-pointer">
+              <span class="label-text">Active</span>
+              <input type="checkbox" v-model="form.active" class="toggle toggle-success" />
+            </label>
+          </div>
           <div class="modal-action">
-            <button type="button" @click="closeModal" class="btn">Cancel</button>
+            <button type="button" @click="showModal = false" class="btn">Cancel</button>
             <button type="submit" class="btn btn-primary">Save</button>
           </div>
         </form>
       </div>
-      <form method="dialog" class="modal-backdrop" @click="closeModal">
-        <button>close</button>
-      </form>
+      <form method="dialog" class="modal-backdrop" @click="showModal = false"><button>close</button></form>
     </dialog>
   </div>
 </template>
@@ -113,59 +99,49 @@ import { useAppStore } from '../stores/app'
 import { apiClient } from '../api/client'
 
 const appStore = useAppStore()
-const filterType = ref('all')
-const showAddModal = ref(false)
-const editingAccount = ref(null)
-const form = ref({ code: '', name: '', account_type: 'expense' })
+const accounts = ref([])
+const showModal = ref(false)
+const editing = ref(null)
+const activeType = ref('all')
+const form = ref({ code: '', name: '', account_type: 'expense', active: true })
 
-const accountTypes = ['all', 'asset', 'liability', 'equity', 'income', 'expense']
+const types = ['income', 'expense', 'asset', 'liability', 'equity']
+const companyId = computed(() => appStore.currentCompany?.id || 1)
 
-const filteredAccounts = computed(() => {
-  if (filterType.value === 'all') return appStore.chartOfAccounts
-  return appStore.chartOfAccounts.filter(a => a.account_type === filterType.value)
+const countByType = (type) => accounts.value.filter(a => a.account_type === type).length
+const accountsByType = (type) => accounts.value.filter(a => a.account_type === type).sort((a, b) => (a.code || '').localeCompare(b.code || ''))
+
+const visibleTypes = computed(() => {
+  if (activeType.value === 'all') return types.filter(t => countByType(t) > 0 || t === 'income' || t === 'expense')
+  return [activeType.value]
 })
 
-const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1)
-
-const typeBadgeClass = (type) => ({
-  asset: 'badge-success',
-  liability: 'badge-error',
-  equity: 'badge-info',
-  income: 'badge-primary',
-  expense: 'badge-warning'
-}[type] || 'badge-ghost')
-
-const editAccount = (account) => {
-  editingAccount.value = account
-  form.value = { ...account }
-  showAddModal.value = true
-}
-
-const closeModal = () => {
-  showAddModal.value = false
-  editingAccount.value = null
-  form.value = { code: '', name: '', account_type: 'expense' }
+const openModal = (acct = null) => {
+  editing.value = acct
+  form.value = acct ? { ...acct } : { code: '', name: '', account_type: 'expense', active: true }
+  showModal.value = true
 }
 
 const saveAccount = async () => {
-  const companyId = appStore.currentCompany?.id || 1
-  if (editingAccount.value) {
-    await apiClient.put(`/api/v1/companies/${companyId}/chart_of_accounts/${editingAccount.value.id}`, form.value)
+  const cid = companyId.value
+  if (editing.value) {
+    await apiClient.put(`/api/v1/companies/${cid}/chart_of_accounts/${editing.value.id}`, { chart_of_account: form.value })
   } else {
-    await apiClient.post(`/api/v1/companies/${companyId}/chart_of_accounts`, form.value)
+    await apiClient.post(`/api/v1/companies/${cid}/chart_of_accounts`, { chart_of_account: form.value })
   }
-  closeModal()
-  await appStore.fetchChartOfAccounts(companyId)
+  showModal.value = false
+  await fetchAccounts()
 }
 
-const toggleActive = async (account) => {
-  const companyId = appStore.currentCompany?.id || 1
-  await apiClient.put(`/api/v1/companies/${companyId}/chart_of_accounts/${account.id}`, { active: !account.active })
-  await appStore.fetchChartOfAccounts(companyId)
+const deleteAccount = async (acct) => {
+  if (!confirm(`Delete "${acct.name}"?`)) return
+  await apiClient.delete(`/api/v1/companies/${companyId.value}/chart_of_accounts/${acct.id}`)
+  await fetchAccounts()
 }
 
-onMounted(async () => {
-  const companyId = appStore.currentCompany?.id || 1
-  await appStore.fetchChartOfAccounts(companyId)
-})
+const fetchAccounts = async () => {
+  accounts.value = await apiClient.get(`/api/v1/companies/${companyId.value}/chart_of_accounts`) || []
+}
+
+onMounted(fetchAccounts)
 </script>

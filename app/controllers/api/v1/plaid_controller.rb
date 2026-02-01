@@ -5,129 +5,138 @@ module Api
       before_action :authenticate_user!
 
       # POST /api/v1/plaid/create_link_token
-      # Creates a Plaid Link token for the frontend
       def create_link_token
-        plaid = PlaidService.new
-        link_token = plaid.create_link_token(user_id: current_user.id)
+        company = current_user.accessible_companies.find(params[:company_id])
 
-        if link_token
-          render json: { link_token: link_token }
-        else
-          render json: { error: 'Unable to create link token' }, status: :service_unavailable
-        end
+        client = plaid_client
+        request = Plaid::LinkTokenCreateRequest.new({
+          user: { client_user_id: current_user.id.to_s },
+          client_name: 'ecfoBooks',
+          products: ['transactions'],
+          country_codes: ['US'],
+          language: 'en'
+        })
+
+        response = client.link_token_create(request)
+        render json: { link_token: response.link_token }
       rescue => e
-        render json: { error: e.message }, status: :service_unavailable
+        render json: { error: e.message }, status: :unprocessable_entity
       end
 
       # POST /api/v1/plaid/exchange_token
-      # Exchanges public token for access token after Link success
       def exchange_token
-        plaid = PlaidService.new
-        result = plaid.exchange_public_token(params[:public_token])
+        company = current_user.accessible_companies.find(params[:company_id])
+        client = plaid_client
 
-        # Store the access token securely
-        plaid_item = PlaidItem.create!(
-          company: company,
-          access_token: result[:access_token],
-          item_id: result[:item_id],
-          institution_id: params[:institution_id],
-          institution_name: params[:institution_name],
-          status: 'active'
+        exchange_request = Plaid::ItemPublicTokenExchangeRequest.new({ public_token: params[:public_token] })
+        exchange_response = client.item_public_token_exchange(exchange_request)
+
+        access_token = exchange_response.access_token
+        item_id = exchange_response.item_id
+
+        plaid_item = company.plaid_items.create!(
+          access_token: access_token,
+          item_id: item_id,
+          institution_name: params[:institution_name] || 'Unknown'
         )
 
-        # Fetch and store accounts
-        accounts = plaid.get_accounts(result[:access_token])
-        accounts.each do |plaid_account|
-          account = company.accounts.find_or_initialize_by(plaid_account_id: plaid_account.account_id)
-          account.update!(
-            name: plaid_account.name,
-            official_name: plaid_account.official_name,
-            account_type: plaid_account.type,
-            account_subtype: plaid_account.subtype,
-            mask: plaid_account.mask,
-            institution: params[:institution_name],
-            plaid_item: plaid_item,
-            active: true,
-            current_balance: plaid_account.balances.current,
-            available_balance: plaid_account.balances.available
-          )
+        # Fetch and create accounts
+        accounts_response = client.accounts_get(
+          Plaid::AccountsGetRequest.new({ access_token: access_token })
+        )
+
+        accounts_response.accounts.each do |pa|
+          company.accounts.find_or_create_by(plaid_account_id: pa.account_id) do |a|
+            a.plaid_item = plaid_item
+            a.name = pa.name
+            a.official_name = pa.official_name
+            a.account_type = pa.type.to_s
+            a.subtype = pa.subtype.to_s
+            a.mask = pa.mask
+            a.current_balance = pa.balances.current || 0
+            a.available_balance = pa.balances.available
+          end
         end
 
-        render json: {
-          message: 'Account linked successfully',
-          item_id: plaid_item.item_id,
-          accounts_count: accounts.length
-        }, status: :created
+        render json: { message: 'Account linked', item_id: plaid_item.id }
       rescue => e
         render json: { error: e.message }, status: :unprocessable_entity
       end
 
       # POST /api/v1/plaid/sync_transactions
-      # Sync transactions for a company using transactions/sync
       def sync_transactions
-        plaid = PlaidService.new
-        items = company.plaid_items.active
+        plaid_item = PlaidItem.find(params[:plaid_item_id])
+        company = plaid_item.company
 
-        total_added = 0
-        total_modified = 0
-        total_removed = 0
+        # Verify access
+        current_user.accessible_companies.find(company.id)
 
-        items.each do |item|
-          result = plaid.sync_transactions(item.access_token, cursor: item.transaction_cursor)
+        client = plaid_client
+        added_count = 0
+        modified_count = 0
+        removed_count = 0
+        cursor = plaid_item.transaction_cursor
+
+        loop do
+          request = Plaid::TransactionsSyncRequest.new({
+            access_token: plaid_item.access_token,
+            cursor: cursor
+          })
+
+          response = client.transactions_sync(request)
 
           # Process added transactions
-          result[:added].each do |txn|
-            account = company.accounts.find_by(plaid_account_id: txn.account_id)
+          response.added.each do |pt|
+            account = company.accounts.find_by(plaid_account_id: pt.account_id)
             next unless account
 
-            transaction = Transaction.find_or_initialize_by(
-              plaid_transaction_id: txn.transaction_id,
-              company: company
-            )
-            transaction.update!(
-              account: account,
-              chart_of_account: auto_categorize(txn, company),
-              date: txn.date,
-              description: txn.name,
-              amount: txn.amount * -1, # Plaid uses positive for debits
-              category: txn.personal_finance_category&.primary,
-              subcategory: txn.personal_finance_category&.detailed,
-              pending: txn.pending,
-              merchant_name: txn.merchant_name
-            )
-            total_added += 1
+            account.transactions.find_or_create_by(plaid_transaction_id: pt.transaction_id) do |t|
+              t.date = pt.date
+              t.description = pt.name
+              t.amount = -pt.amount # Plaid uses negative for debits
+              t.pending = pt.pending
+              t.merchant_name = pt.merchant_name
+              t.category = pt.personal_finance_category&.primary
+              t.subcategory = pt.personal_finance_category&.detailed
+            end
+            added_count += 1
           end
 
-          # Process modified transactions
-          result[:modified].each do |txn|
-            transaction = Transaction.find_by(plaid_transaction_id: txn.transaction_id)
-            next unless transaction
-
-            transaction.update!(
-              date: txn.date,
-              description: txn.name,
-              amount: txn.amount * -1,
-              pending: txn.pending,
-              merchant_name: txn.merchant_name
+          # Process modified
+          response.modified.each do |pt|
+            txn = Transaction.find_by(plaid_transaction_id: pt.transaction_id)
+            next unless txn
+            txn.update(
+              date: pt.date,
+              description: pt.name,
+              amount: -pt.amount,
+              pending: pt.pending,
+              merchant_name: pt.merchant_name
             )
-            total_modified += 1
+            modified_count += 1
           end
 
-          # Process removed transactions
-          result[:removed].each do |txn|
-            Transaction.where(plaid_transaction_id: txn.transaction_id).destroy_all
-            total_removed += 1
+          # Process removed
+          response.removed.each do |pt|
+            Transaction.find_by(plaid_transaction_id: pt.transaction_id)&.destroy
+            removed_count += 1
           end
 
-          # Update cursor
-          item.update!(transaction_cursor: result[:cursor])
+          cursor = response.next_cursor
+          break unless response.has_more
         end
 
+        plaid_item.update!(transaction_cursor: cursor, last_synced_at: Time.current)
+
+        # Auto-categorize new transactions
+        auto_categorized = CategorizationRule.auto_categorize(company)
+
         render json: {
-          message: 'Transactions synced',
-          added: total_added,
-          modified: total_modified,
-          removed: total_removed
+          added: added_count,
+          modified: modified_count,
+          removed: removed_count,
+          auto_categorized: auto_categorized,
+          message: "Synced #{added_count} new, #{modified_count} modified, #{removed_count} removed. Auto-categorized #{auto_categorized}."
         }
       rescue => e
         render json: { error: e.message }, status: :unprocessable_entity
@@ -135,18 +144,22 @@ module Api
 
       # POST /api/v1/plaid/refresh_balances
       def refresh_balances
-        plaid = PlaidService.new
+        plaid_item = PlaidItem.find(params[:plaid_item_id])
+        company = plaid_item.company
+        current_user.accessible_companies.find(company.id)
 
-        company.plaid_items.active.each do |item|
-          accounts = plaid.get_balances(item.access_token)
-          accounts.each do |plaid_account|
-            account = company.accounts.find_by(plaid_account_id: plaid_account.account_id)
-            next unless account
-            account.update!(
-              current_balance: plaid_account.balances.current,
-              available_balance: plaid_account.balances.available
-            )
-          end
+        client = plaid_client
+        response = client.accounts_get(
+          Plaid::AccountsGetRequest.new({ access_token: plaid_item.access_token })
+        )
+
+        response.accounts.each do |pa|
+          account = company.accounts.find_by(plaid_account_id: pa.account_id)
+          next unless account
+          account.update!(
+            current_balance: pa.balances.current || 0,
+            available_balance: pa.balances.available
+          )
         end
 
         render json: { message: 'Balances refreshed' }
@@ -156,78 +169,55 @@ module Api
 
       # GET /api/v1/plaid/items
       def items
-        items = company.plaid_items.includes(:accounts)
-        render json: items.map { |item|
+        companies = current_user.accessible_companies
+        plaid_items = PlaidItem.where(company: companies).includes(company: :accounts)
+
+        render json: plaid_items.map { |item|
           {
             id: item.id,
-            item_id: item.item_id,
             institution_name: item.institution_name,
-            status: item.status,
-            accounts: item.accounts.map { |a|
+            last_synced_at: item.last_synced_at,
+            created_at: item.created_at,
+            accounts: item.company.accounts.where(plaid_item: item).map { |a|
               {
                 id: a.id,
                 name: a.name,
-                type: a.account_type,
+                account_type: a.account_type,
                 mask: a.mask,
                 current_balance: a.current_balance,
-                available_balance: a.available_balance
+                available_balance: a.available_balance,
+                active: a.active
               }
-            },
-            last_synced: item.updated_at
+            }
           }
         }
       end
 
       # DELETE /api/v1/plaid/items/:id
       def remove_item
-        item = company.plaid_items.find(params[:id])
-        plaid = PlaidService.new
-        plaid.remove_item(item.access_token)
-        item.update!(status: 'removed')
-        render json: { message: 'Item removed' }
-      rescue => e
-        render json: { error: e.message }, status: :unprocessable_entity
+        item = PlaidItem.find(params[:id])
+        current_user.accessible_companies.find(item.company_id)
+
+        # Remove from Plaid
+        begin
+          client = plaid_client
+          client.item_remove(Plaid::ItemRemoveRequest.new({ access_token: item.access_token }))
+        rescue => e
+          Rails.logger.warn "Plaid item removal failed: #{e.message}"
+        end
+
+        item.destroy
+        render json: { message: 'Item disconnected' }
       end
 
       private
 
-      def company
-        @company ||= if params[:company_id]
-          current_user.accessible_companies.find(params[:company_id])
-        else
-          current_user.accessible_companies.first
-        end
-      end
-
-      def auto_categorize(txn, company)
-        # Auto-map Plaid category to chart of accounts
-        category = txn.personal_finance_category&.primary&.downcase
-        return nil unless category
-
-        mapping = {
-          'income' => 'income',
-          'transfer_in' => 'income',
-          'transfer_out' => 'expense',
-          'loan_payments' => 'expense',
-          'bank_fees' => 'expense',
-          'entertainment' => 'expense',
-          'food_and_drink' => 'expense',
-          'general_merchandise' => 'expense',
-          'general_services' => 'expense',
-          'government_and_non_profit' => 'expense',
-          'home_improvement' => 'expense',
-          'medical' => 'expense',
-          'personal_care' => 'expense',
-          'rent_and_utilities' => 'expense',
-          'transportation' => 'expense',
-          'travel' => 'expense'
-        }
-
-        account_type = mapping[category] || 'expense'
-        company.chart_of_accounts
-          .where(account_type: account_type, active: true)
-          .find_by('LOWER(name) LIKE ?', "%#{category.gsub('_', ' ')}%") ||
-          company.chart_of_accounts.where(account_type: account_type, active: true).first
+      def plaid_client
+        configuration = Plaid::Configuration.new
+        configuration.server_index = Rails.env.production? ? Plaid::Configuration::Environment['production'] : Plaid::Configuration::Environment['sandbox']
+        configuration.api_key['PLAID-CLIENT-ID'] = Rails.application.credentials.dig(:plaid, :client_id) || ENV['PLAID_CLIENT_ID']
+        configuration.api_key['PLAID-SECRET'] = Rails.application.credentials.dig(:plaid, :secret) || ENV['PLAID_SECRET']
+        Plaid::PlaidApi.new(Plaid::ApiClient.new(configuration))
       end
     end
   end

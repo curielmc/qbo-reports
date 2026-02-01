@@ -1,154 +1,114 @@
 module Api
   module V1
     class ReportsController < ApplicationController
+      skip_before_action :verify_authenticity_token
       before_action :authenticate_user!
       before_action :set_company
-      before_action :authorize_company_access
 
       # GET /api/v1/companies/:company_id/reports/profit_loss
       def profit_loss
-        start_date = parse_date(params[:start_date]) || Date.current.beginning_of_year
-        end_date = parse_date(params[:end_date]) || Date.current
+        start_date = params[:start_date] || Date.current.beginning_of_year
+        end_date = params[:end_date] || Date.current
 
-        # Income accounts
-        income_accounts = @company.chart_of_accounts.income.active
-        income_data = income_accounts.map do |coa|
-          transactions = coa.transactions.where(date: start_date..end_date, pending: false)
-          total = transactions.sum(:amount)
-          {
-            id: coa.id,
-            code: coa.code,
-            name: coa.name,
-            amount: total.abs
-          }
+        income = {}
+        @company.chart_of_accounts.income.active.each do |coa|
+          amount = coa.transactions.where(date: start_date..end_date, pending: false).sum(:amount).abs
+          income[coa.name] = amount if amount > 0
         end
 
-        # Expense accounts
-        expense_accounts = @company.chart_of_accounts.expense.active
-        expense_data = expense_accounts.map do |coa|
-          transactions = coa.transactions.where(date: start_date..end_date, pending: false)
-          total = transactions.sum(:amount)
-          {
-            id: coa.id,
-            code: coa.code,
-            name: coa.name,
-            amount: total.abs
-          }
+        expenses = {}
+        @company.chart_of_accounts.expense.active.each do |coa|
+          amount = coa.transactions.where(date: start_date..end_date, pending: false).sum(:amount).abs
+          expenses[coa.name] = amount if amount > 0
         end
 
-        total_income = income_data.sum { |i| i[:amount] }
-        total_expenses = expense_data.sum { |e| e[:amount] }
-        net_income = total_income - total_expenses
+        total_income = income.values.sum
+        total_expenses = expenses.values.sum
+
+        # AI summary (async-friendly)
+        ai_summary = begin
+          ReportSummarizer.new(@company).summarize_profit_loss(income, expenses, start_date, end_date)
+        rescue => e
+          Rails.logger.warn "AI summary failed: #{e.message}"
+          nil
+        end
 
         render json: {
-          start_date: start_date.to_s,
-          end_date: end_date.to_s,
-          income: {
-            accounts: income_data,
-            total: total_income
-          },
-          expenses: {
-            accounts: expense_data,
-            total: total_expenses
-          },
-          net_income: net_income
+          period: { start_date: start_date, end_date: end_date },
+          income: income,
+          expenses: expenses,
+          total_income: total_income,
+          total_expenses: total_expenses,
+          net_income: total_income - total_expenses,
+          ai_summary: ai_summary
         }
       end
 
       # GET /api/v1/companies/:company_id/reports/balance_sheet
       def balance_sheet
-        as_of_date = parse_date(params[:as_of_date]) || Date.current
+        as_of = params[:as_of_date] || Date.current
 
-        # Assets
-        asset_accounts = @company.chart_of_accounts.asset.active
-        asset_data = asset_accounts.map do |coa|
-          transactions = coa.transactions.where("date <= ?", as_of_date)
-          balance = transactions.sum(:amount)
-          {
-            id: coa.id,
-            code: coa.code,
-            name: coa.name,
-            balance: balance
-          }
+        assets = {}
+        @company.chart_of_accounts.where(account_type: 'asset').active.each do |coa|
+          balance = coa.transactions.where('date <= ?', as_of).sum(:amount)
+          assets[coa.name] = balance if balance != 0
         end
 
-        # Liabilities
-        liability_accounts = @company.chart_of_accounts.liability.active
-        liability_data = liability_accounts.map do |coa|
-          transactions = coa.transactions.where("date <= ?", as_of_date)
-          balance = transactions.sum(:amount).abs
-          {
-            id: coa.id,
-            code: coa.code,
-            name: coa.name,
-            balance: balance
-          }
+        # Also include bank account balances
+        @company.accounts.active.each do |account|
+          if %w[checking savings depository investment brokerage].include?(account.account_type)
+            assets[account.name] = account.current_balance if account.current_balance != 0
+          end
         end
 
-        # Equity
-        equity_accounts = @company.chart_of_accounts.equity.active
-        equity_data = equity_accounts.map do |coa|
-          transactions = coa.transactions.where("date <= ?", as_of_date)
-          balance = transactions.sum(:amount)
-          {
-            id: coa.id,
-            code: coa.code,
-            name: coa.name,
-            balance: balance
-          }
+        liabilities = {}
+        @company.chart_of_accounts.where(account_type: 'liability').active.each do |coa|
+          balance = coa.transactions.where('date <= ?', as_of).sum(:amount).abs
+          liabilities[coa.name] = balance if balance != 0
         end
 
-        total_assets = asset_data.sum { |a| a[:balance] }
-        total_liabilities = liability_data.sum { |l| l[:balance] }
-        total_equity = equity_data.sum { |e| e[:balance] }
+        @company.accounts.active.each do |account|
+          if %w[credit credit_card loan mortgage].include?(account.account_type)
+            liabilities[account.name] = account.current_balance.abs if account.current_balance != 0
+          end
+        end
 
-        # Retained earnings = Net Income from beginning of time to date
-        income_total = @company.transactions.joins(:chart_of_account)
-                          .where(chart_of_accounts: { account_type: 'income' })
-                          .where("transactions.date <= ?", as_of_date)
-                          .sum(:amount).abs
-        expense_total = @company.transactions.joins(:chart_of_account)
-                           .where(chart_of_accounts: { account_type: 'expense' })
-                           .where("transactions.date <= ?", as_of_date)
-                           .sum(:amount).abs
-        retained_earnings = income_total - expense_total
+        equity = {}
+        @company.chart_of_accounts.where(account_type: 'equity').active.each do |coa|
+          balance = coa.transactions.where('date <= ?', as_of).sum(:amount)
+          equity[coa.name] = balance if balance != 0
+        end
+
+        total_assets = assets.values.sum
+        total_liabilities = liabilities.values.sum
+        total_equity = equity.values.sum
+
+        # Retained earnings = total_assets - total_liabilities - total_equity
+        retained = total_assets - total_liabilities - total_equity
+        equity['Retained Earnings'] = retained if retained != 0
+
+        ai_summary = begin
+          ReportSummarizer.new(@company).summarize_balance_sheet(assets, liabilities, equity)
+        rescue => e
+          nil
+        end
 
         render json: {
-          as_of_date: as_of_date.to_s,
-          assets: {
-            accounts: asset_data,
-            total: total_assets
-          },
-          liabilities: {
-            accounts: liability_data,
-            total: total_liabilities
-          },
-          equity: {
-            accounts: equity_data,
-            total: total_equity,
-            retained_earnings: retained_earnings
-          },
-          total_liabilities_and_equity: total_liabilities + total_equity + retained_earnings
+          as_of_date: as_of,
+          assets: assets,
+          liabilities: liabilities,
+          equity: equity,
+          total_assets: total_assets,
+          total_liabilities: total_liabilities,
+          total_equity: total_equity + retained,
+          ai_summary: ai_summary
         }
       end
 
       private
 
       def set_company
-        @company = Company.find(params[:company_id])
-      end
-
-      def authorize_company_access
-        unless current_user.can_manage_company?(@company)
-          render json: { error: 'Unauthorized' }, status: :unauthorized
-        end
-      end
-
-      def parse_date(date_string)
-        return nil if date_string.blank?
-        Date.parse(date_string)
-      rescue ArgumentError
-        nil
+        @company = current_user.accessible_companies.find(params[:company_id])
       end
     end
   end

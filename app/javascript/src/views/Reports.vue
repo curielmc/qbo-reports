@@ -1,225 +1,114 @@
 <template>
-  <div class="min-h-screen bg-base-200">
-    <!-- Header -->
-    <div class="bg-primary text-primary-content py-8">
-      <div class="container mx-auto px-4">
-        <h1 class="text-4xl font-bold mb-2">Reports</h1>
-        <p class="text-lg opacity-80">Financial statements and analysis</p>
+  <div>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold">Reports</h1>
+      <div class="flex items-center gap-3">
+        <input type="date" v-model="startDate" @change="refresh" class="input input-bordered input-sm" />
+        <span class="text-base-content/40">to</span>
+        <input type="date" v-model="endDate" @change="refresh" class="input input-bordered input-sm" />
       </div>
     </div>
 
-    <div class="container mx-auto px-4 py-8">
-      <!-- Report Type Selection -->
-      <div class="flex gap-4 mb-8">
-        <button 
-          @click="currentReport = 'pnl'"
-          :class="['btn', currentReport === 'pnl' ? 'btn-primary' : 'btn-outline']"
-        >
-          Profit & Loss
-        </button>
-        <button 
-          @click="currentReport = 'balance'"
-          :class="['btn', currentReport === 'balance' ? 'btn-primary' : 'btn-outline']"
-        >
-          Balance Sheet
-        </button>
+    <!-- Report Tabs -->
+    <div class="tabs tabs-boxed mb-6">
+      <a :class="['tab', activeTab === 'pl' ? 'tab-active' : '']" @click="activeTab = 'pl'">Profit & Loss</a>
+      <a :class="['tab', activeTab === 'bs' ? 'tab-active' : '']" @click="activeTab = 'bs'">Balance Sheet</a>
+    </div>
+
+    <!-- AI Summary -->
+    <div v-if="summary" class="alert alert-info shadow-lg mb-6">
+      <div class="flex gap-3">
+        <span class="text-2xl">🤖</span>
+        <div>
+          <p class="font-medium text-sm mb-1">AI Insights</p>
+          <p>{{ summary }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- P&L Report -->
+    <div v-if="activeTab === 'pl'" class="space-y-6">
+      <!-- Export -->
+      <div class="flex justify-end">
+        <a :href="`/api/v1/companies/${companyId}/exports/profit_loss?start_date=${startDate}&end_date=${endDate}`" 
+          class="btn btn-outline btn-sm gap-1">📥 Export CSV</a>
       </div>
 
-      <!-- Date Range Selector -->
-      <div class="card bg-base-100 shadow-xl mb-8">
+      <!-- Income Section -->
+      <div class="card bg-base-100 shadow">
         <div class="card-body">
-          <h2 class="card-title mb-4">Date Range</h2>
-          <div class="flex gap-4 items-end">
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Start Date</span>
-              </label>
-              <input 
-                type="date" 
-                v-model="startDate" 
-                class="input input-bordered"
-              />
-            </div>
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">End Date</span>
-              </label>
-              <input 
-                type="date" 
-                v-model="endDate" 
-                class="input input-bordered"
-              />
-            </div>
-            <button @click="fetchReport" class="btn btn-primary">
-              Generate Report
-            </button>
-          </div>
+          <h2 class="card-title text-success">Income</h2>
+          <table class="table table-sm">
+            <tbody>
+              <tr v-for="[name, amount] in plData.income" :key="name">
+                <td>{{ name }}</td>
+                <td class="text-right font-mono text-success">{{ formatCurrency(amount) }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold border-t-2">
+                <td>Total Income</td>
+                <td class="text-right font-mono text-success">{{ formatCurrency(plData.totalIncome) }}</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
 
-      <!-- Profit & Loss Report -->
-      <div v-if="currentReport === 'pnl' && reportData" class="space-y-6">
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="card bg-success text-success-content">
-            <div class="card-body">
-              <h3 class="text-lg font-semibold">Total Income</h3>
-              <p class="text-3xl font-bold">{{ formatCurrency(reportData.income?.total) }}</p>
-            </div>
-          </div>
-          <div class="card bg-error text-error-content">
-            <div class="card-body">
-              <h3 class="text-lg font-semibold">Total Expenses</h3>
-              <p class="text-3xl font-bold">{{ formatCurrency(reportData.expenses?.total) }}</p>
-            </div>
-          </div>
-          <div :class="['card', netIncome >= 0 ? 'bg-info text-info-content' : 'bg-warning text-warning-content']">
-            <div class="card-body">
-              <h3 class="text-lg font-semibold">Net Income</h3>
-              <p class="text-3xl font-bold">{{ formatCurrency(netIncome) }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Income Section -->
-        <div class="card bg-base-100 shadow-xl">
-          <div class="card-body">
-            <h2 class="card-title text-success mb-4">Income</h2>
-            <div class="overflow-x-auto">
-              <table class="table table-zebra">
-                <thead>
-                  <tr>
-                    <th>Account</th>
-                    <th class="text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="account in reportData.income?.accounts" :key="account.id">
-                    <td>{{ account.code }} - {{ account.name }}</td>
-                    <td class="text-right font-mono">{{ formatCurrency(account.amount) }}</td>
-                  </tr>
-                  <tr class="font-bold bg-success/10">
-                    <td>Total Income</td>
-                    <td class="text-right font-mono">{{ formatCurrency(reportData.income?.total) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Expenses Section -->
-        <div class="card bg-base-100 shadow-xl">
-          <div class="card-body">
-            <h2 class="card-title text-error mb-4">Expenses</h2>
-            <div class="overflow-x-auto">
-              <table class="table table-zebra">
-                <thead>
-                  <tr>
-                    <th>Account</th>
-                    <th class="text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="account in reportData.expenses?.accounts" :key="account.id">
-                    <td>{{ account.code }} - {{ account.name }}</td>
-                    <td class="text-right font-mono">{{ formatCurrency(account.amount) }}</td>
-                  </tr>
-                  <tr class="font-bold bg-error/10">
-                    <td>Total Expenses</td>
-                    <td class="text-right font-mono">{{ formatCurrency(reportData.expenses?.total) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+      <!-- Expenses Section -->
+      <div class="card bg-base-100 shadow">
+        <div class="card-body">
+          <h2 class="card-title text-error">Expenses</h2>
+          <table class="table table-sm">
+            <tbody>
+              <tr v-for="[name, amount] in plData.expenses" :key="name">
+                <td>{{ name }}</td>
+                <td class="text-right font-mono text-error">{{ formatCurrency(amount) }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold border-t-2">
+                <td>Total Expenses</td>
+                <td class="text-right font-mono text-error">{{ formatCurrency(plData.totalExpenses) }}</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
 
-      <!-- Balance Sheet Report -->
-      <div v-if="currentReport === 'balance' && reportData" class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div class="card bg-success text-success-content">
-            <div class="card-body">
-              <h3 class="text-lg font-semibold">Total Assets</h3>
-              <p class="text-3xl font-bold">{{ formatCurrency(reportData.assets?.total) }}</p>
-            </div>
-          </div>
-          <div class="card bg-error text-error-content">
-            <div class="card-body">
-              <h3 class="text-lg font-semibold">Total Liabilities & Equity</h3>
-              <p class="text-3xl font-bold">{{ formatCurrency(reportData.total_liabilities_and_equity) }}</p>
-            </div>
-          </div>
+      <!-- Net Income -->
+      <div class="card bg-primary text-primary-content shadow-xl">
+        <div class="card-body flex-row justify-between items-center">
+          <h2 class="card-title">Net Income</h2>
+          <span class="text-3xl font-bold font-mono">{{ formatCurrency(plData.totalIncome - plData.totalExpenses) }}</span>
         </div>
+      </div>
+    </div>
 
-        <!-- Assets -->
-        <div class="card bg-base-100 shadow-xl">
-          <div class="card-body">
-            <h2 class="card-title text-success mb-4">Assets</h2>
-            <div class="overflow-x-auto">
-              <table class="table table-zebra">
-                <tbody>
-                  <tr v-for="account in reportData.assets?.accounts" :key="account.id">
-                    <td>{{ account.code }} - {{ account.name }}</td>
-                    <td class="text-right font-mono">{{ formatCurrency(account.balance) }}</td>
-                  </tr>
-                  <tr class="font-bold bg-success/10">
-                    <td>Total Assets</td>
-                    <td class="text-right font-mono">{{ formatCurrency(reportData.assets?.total) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+    <!-- Balance Sheet -->
+    <div v-if="activeTab === 'bs'" class="space-y-6">
+      <div class="flex justify-end">
+        <a :href="`/api/v1/companies/${companyId}/exports/balance_sheet?as_of_date=${endDate}`" 
+          class="btn btn-outline btn-sm gap-1">📥 Export CSV</a>
+      </div>
 
-        <!-- Liabilities -->
-        <div class="card bg-base-100 shadow-xl">
-          <div class="card-body">
-            <h2 class="card-title text-error mb-4">Liabilities</h2>
-            <div class="overflow-x-auto">
-              <table class="table table-zebra">
-                <tbody>
-                  <tr v-for="account in reportData.liabilities?.accounts" :key="account.id">
-                    <td>{{ account.code }} - {{ account.name }}</td>
-                    <td class="text-right font-mono">{{ formatCurrency(account.balance) }}</td>
-                  </tr>
-                  <tr class="font-bold bg-error/10">
-                    <td>Total Liabilities</td>
-                    <td class="text-right font-mono">{{ formatCurrency(reportData.liabilities?.total) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Equity -->
-        <div class="card bg-base-100 shadow-xl">
-          <div class="card-body">
-            <h2 class="card-title text-info mb-4">Equity</h2>
-            <div class="overflow-x-auto">
-              <table class="table table-zebra">
-                <tbody>
-                  <tr v-for="account in reportData.equity?.accounts" :key="account.id">
-                    <td>{{ account.code }} - {{ account.name }}</td>
-                    <td class="text-right font-mono">{{ formatCurrency(account.balance) }}</td>
-                  </tr>
-                  <tr>
-                    <td>Retained Earnings</td>
-                    <td class="text-right font-mono">{{ formatCurrency(reportData.equity?.retained_earnings) }}</td>
-                  </tr>
-                  <tr class="font-bold bg-info/10">
-                    <td>Total Equity</td>
-                    <td class="text-right font-mono">
-                      {{ formatCurrency(reportData.equity?.total + reportData.equity?.retained_earnings) }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+      <div v-for="section in bsSections" :key="section.title" class="card bg-base-100 shadow">
+        <div class="card-body">
+          <h2 :class="['card-title', section.color]">{{ section.title }}</h2>
+          <table class="table table-sm">
+            <tbody>
+              <tr v-for="[name, amount] in section.items" :key="name">
+                <td>{{ name }}</td>
+                <td class="text-right font-mono">{{ formatCurrency(amount) }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="font-bold border-t-2">
+                <td>Total {{ section.title }}</td>
+                <td class="text-right font-mono">{{ formatCurrency(section.total) }}</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
     </div>
@@ -227,52 +116,62 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useAppStore } from '../stores/app'
+import { apiClient } from '../api/client'
 
-const currentReport = ref('pnl')
+const appStore = useAppStore()
+const activeTab = ref('pl')
+const summary = ref(null)
+const loading = ref(false)
+const plReport = ref(null)
+const bsReport = ref(null)
+
+const companyId = computed(() => appStore.currentCompany?.id || 1)
 const startDate = ref(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0])
 const endDate = ref(new Date().toISOString().split('T')[0])
-const reportData = ref(null)
-const loading = ref(false)
 
-const netIncome = computed(() => {
-  if (!reportData.value) return 0
-  return (reportData.value.income?.total || 0) - (reportData.value.expenses?.total || 0)
+const formatCurrency = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0)
+
+const plData = computed(() => {
+  if (!plReport.value) return { income: [], expenses: [], totalIncome: 0, totalExpenses: 0 }
+  const r = plReport.value
+  return {
+    income: Object.entries(r.income || {}).sort((a, b) => b[1] - a[1]),
+    expenses: Object.entries(r.expenses || {}).sort((a, b) => b[1] - a[1]),
+    totalIncome: r.total_income || 0,
+    totalExpenses: r.total_expenses || 0
+  }
 })
 
-const formatCurrency = (amount) => {
-  if (amount === null || amount === undefined) return '$0.00'
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(amount)
-}
+const bsSections = computed(() => {
+  if (!bsReport.value) return []
+  const r = bsReport.value
+  return [
+    { title: 'Assets', color: 'text-success', items: Object.entries(r.assets || {}), total: r.total_assets || 0 },
+    { title: 'Liabilities', color: 'text-error', items: Object.entries(r.liabilities || {}), total: r.total_liabilities || 0 },
+    { title: 'Equity', color: 'text-primary', items: Object.entries(r.equity || {}), total: r.total_equity || 0 }
+  ]
+})
 
-const fetchReport = async () => {
+const refresh = async () => {
   loading.value = true
-  try {
-    const companyId = 1 // TODO: Get from store/context
-    const endpoint = currentReport.value === 'pnl' 
-      ? `/api/v1/companies/${companyId}/reports/profit_loss`
-      : `/api/v1/companies/${companyId}/reports/balance_sheet`
-    
-    const params = new URLSearchParams()
-    if (currentReport.value === 'pnl') {
-      params.append('start_date', startDate.value)
-      params.append('end_date', endDate.value)
-    } else {
-      params.append('as_of_date', endDate.value)
-    }
-    
-    const response = await fetch(`${endpoint}?${params}`)
-    reportData.value = await response.json()
-  } catch (error) {
-    console.error('Error fetching report:', error)
-  } finally {
-    loading.value = false
+  summary.value = null
+  const cid = companyId.value
+  
+  if (activeTab.value === 'pl') {
+    const data = await apiClient.get(`/api/v1/companies/${cid}/reports/profit_loss?start_date=${startDate.value}&end_date=${endDate.value}`)
+    plReport.value = data
+    summary.value = data?.ai_summary || null
+  } else {
+    const data = await apiClient.get(`/api/v1/companies/${cid}/reports/balance_sheet?as_of_date=${endDate.value}`)
+    bsReport.value = data
+    summary.value = data?.ai_summary || null
   }
+  loading.value = false
 }
 
-// Load initial report
-fetchReport()
+watch(activeTab, refresh)
+
+onMounted(refresh)
 </script>
