@@ -88,12 +88,20 @@
     <!-- Input -->
     <div class="pt-2 border-t border-base-300">
       <form @submit.prevent="sendMessage()" class="flex gap-2">
+        <!-- File upload button -->
+        <input type="file" ref="fileInput" class="hidden" 
+          accept=".csv,.ofx,.qfx,.pdf,.tsv" @change="uploadStatement" />
+        <button type="button" @click="$refs.fileInput.click()" 
+          class="btn btn-ghost" :disabled="uploading" title="Upload bank statement">
+          <span v-if="uploading" class="loading loading-spinner loading-sm"></span>
+          <span v-else>📎</span>
+        </button>
         <input
           ref="inputRef"
           v-model="input"
           type="text"
           class="input input-bordered flex-1"
-          placeholder="Categorize, reconcile, ask questions..."
+          placeholder="Categorize, reconcile, upload statements, ask questions..."
           :disabled="loading"
           autocomplete="off"
         />
@@ -102,7 +110,7 @@
         </button>
       </form>
       <p class="text-xs text-base-content/30 mt-1 text-center">
-        Try: "categorize all Starbucks as meals" · "reconcile Chase checking" · "what's my burn rate?"
+        📎 Upload CSV/OFX/PDF statements · "categorize all Starbucks as meals" · "what's my burn rate?"
       </p>
     </div>
   </div>
@@ -117,8 +125,10 @@ const appStore = useAppStore()
 const messages = ref([])
 const input = ref('')
 const loading = ref(false)
+const uploading = ref(false)
 const messagesContainer = ref(null)
 const inputRef = ref(null)
+const fileInput = ref(null)
 
 const companyId = () => appStore.currentCompany?.id || 1
 
@@ -192,6 +202,72 @@ const sendMessage = async (text) => {
   loading.value = false
   scrollToBottom()
   inputRef.value?.focus()
+}
+
+const uploadStatement = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  uploading.value = true
+
+  // Show upload message in chat
+  messages.value.push({
+    id: Date.now(),
+    role: 'user',
+    content: `📎 Uploading statement: **${file.name}** (${(file.size / 1024).toFixed(0)} KB)`,
+    created_at: new Date().toISOString()
+  })
+  scrollToBottom()
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const result = await apiClient.upload(`/api/v1/companies/${companyId()}/statements/upload`, formData)
+
+    if (result?.transactions_found > 0) {
+      // Build a rich response
+      let preview = `✅ Parsed **${result.transactions_found} transactions** from ${file.name}\n\n`
+      if (result.account_name) preview += `📋 Account detected: **${result.account_name}** (${result.account_type || 'unknown'})\n`
+      if (result.notes) preview += `📝 ${result.notes}\n\n`
+      preview += `**Preview (first ${Math.min(result.preview?.length || 0, 10)}):**\n`
+      result.preview?.forEach(t => {
+        preview += `  ${t.date} | ${t.description} | $${t.amount} → ${t.suggested_category || '❓'}\n`
+      })
+      preview += `\nSay **"import into [account name]"** to import, or **"show preview"** to see all transactions.`
+
+      messages.value.push({
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: preview,
+        created_at: new Date().toISOString(),
+        uploadId: result.upload_id
+      })
+
+      // Also tell the AI about the upload so it can help with next steps
+      await apiClient.post(`/api/v1/companies/${companyId()}/chat`, {
+        message: `[SYSTEM] Statement uploaded: ${file.name}, ${result.transactions_found} transactions parsed, upload_id=${result.upload_id}. AI suggested categories for transactions. User needs to pick an account and confirm import.`
+      })
+    } else {
+      messages.value.push({
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: `❌ Couldn't parse any transactions from ${file.name}. Try a different format (CSV, OFX/QFX, or PDF).`,
+        created_at: new Date().toISOString()
+      })
+    }
+  } catch (e) {
+    messages.value.push({
+      id: Date.now() + 1,
+      role: 'assistant',
+      content: `❌ Upload failed: ${e.message}. Supported formats: CSV, OFX/QFX, PDF.`,
+      created_at: new Date().toISOString()
+    })
+  }
+
+  uploading.value = false
+  event.target.value = '' // Reset file input
+  scrollToBottom()
 }
 
 const applySuggestion = async (suggestion) => {

@@ -50,6 +50,18 @@ class BookkeeperAi
     - sync_account: {account_name} → trigger Plaid sync for an account
     - refresh_balances: {} → refresh all account balances
 
+    === STATEMENT UPLOADS ===
+    - show_uploads: {} → list recent statement uploads and their status
+    - import_statement: {upload_id, account_name} → import a parsed statement into an account
+    (Note: file upload happens via the upload button in chat — you handle the post-upload flow)
+
+    When a user mentions uploading a statement, tell them to use the 📎 button below.
+    After upload, you'll see the parsed transactions and can help them:
+    1. Review what was found
+    2. Pick or create the right account
+    3. Import the transactions
+    4. Categorize everything
+
     === JOURNAL ENTRIES ===
     - create_adjustment: {lines, date, memo} → manual adjusting journal entry
     - show_journal: {start_date, end_date, account_name} → show journal entries
@@ -187,6 +199,10 @@ class BookkeeperAi
     # Account management
     when 'list_accounts' then list_accounts
     when 'refresh_balances' then { action: 'refresh_balances', message: 'Triggered balance refresh for all accounts' }
+    # Journal
+    # Statements
+    when 'show_uploads' then show_uploads
+    when 'import_statement' then import_statement(params)
     # Journal
     when 'create_adjustment' then create_adjustment(params)
     when 'show_journal' then show_journal(params)
@@ -634,6 +650,51 @@ class BookkeeperAi
           lines: je.journal_lines.map { |jl| { account: jl.chart_of_account.name, debit: jl.debit, credit: jl.credit } }
         }
       }
+    }
+  end
+
+  # ============================================
+  # STATEMENT UPLOADS
+  # ============================================
+
+  def show_uploads
+    uploads = @company.statement_uploads.recent.limit(10)
+    {
+      action: 'show_uploads',
+      uploads: uploads.map { |u|
+        {
+          id: u.id, filename: u.filename, status: u.status,
+          transactions_found: u.transactions_found,
+          transactions_imported: u.transactions_imported,
+          transactions_categorized: u.transactions_categorized,
+          account: u.account&.name,
+          created_at: u.created_at
+        }
+      }
+    }
+  end
+
+  def import_statement(params)
+    upload = @company.statement_uploads.find(params['upload_id'])
+    return { error: 'Statement not parsed yet' } unless upload.status == 'parsed'
+
+    account_name = params['account_name']
+    return { error: 'Need account_name to import into' } unless account_name
+
+    account = @company.accounts.find_or_create_by!(name: account_name) do |a|
+      a.account_type = upload.raw_data.dig('account_type') || 'checking'
+      a.current_balance = 0
+    end
+
+    parser = StatementParser.new(@company)
+    result = parser.import(upload, account)
+
+    {
+      action: 'import_statement',
+      account: account.name,
+      imported: result[:imported],
+      categorized: result[:categorized],
+      skipped_duplicates: result[:skipped_duplicates]
     }
   end
 
