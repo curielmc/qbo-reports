@@ -12,6 +12,7 @@
           <ul class="menu menu-horizontal px-1">
             <li><router-link to="/" class="font-medium">💬 Chat</router-link></li>
             <li><router-link to="/dashboard" class="font-medium">📊 Dashboard</router-link></li>
+            <li><router-link to="/billing" class="font-medium">💰 Billing</router-link></li>
             <li>
               <details>
                 <summary class="font-medium">Browse</summary>

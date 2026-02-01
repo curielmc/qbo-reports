@@ -15,6 +15,25 @@ module Api
         )
       end
 
+      # GET /api/v1/companies/:company_id/usage/queries
+      # Recent queries log
+      def queries
+        queries = @company.ai_queries
+          .where(user: current_user)
+          .order(created_at: :desc)
+          .limit(params[:limit] || 50)
+
+        render json: queries.map { |q|
+          {
+            id: q.id,
+            action: q.action,
+            query_summary: q.query_summary,
+            billed_amount: q.billed_amount,
+            created_at: q.created_at
+          }
+        }
+      end
+
       # GET /api/v1/companies/:company_id/usage/history
       # Monthly usage history
       def history

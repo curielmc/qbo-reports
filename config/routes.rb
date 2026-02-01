@@ -78,6 +78,7 @@ Rails.application.routes.draw do
 
         # Usage / billing
         get 'usage', to: 'usage#show'
+        get 'usage/queries', to: 'usage#queries'
         get 'usage/history', to: 'usage#history'
 
         # Statement uploads
@@ -113,6 +114,7 @@ Rails.application.routes.draw do
   get '/transactions', to: 'home#index'
   get '/linked-accounts', to: 'home#index'
   get '/rules', to: 'home#index'
+  get '/billing', to: 'home#index'
   get '/chat', to: 'home#index'
   get '/login', to: 'home#index'
   get '/admin/billing', to: 'home#index'
