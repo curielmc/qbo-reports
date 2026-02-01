@@ -4,7 +4,6 @@ FROM ruby:${RUBY_VERSION}-slim
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
     build-essential curl git libpq-dev nodejs npm && \
-    npm install -g yarn && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -16,8 +15,8 @@ RUN bundle config set --local deployment true && \
     bundle install
 
 # JS dependencies
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile 2>/dev/null || yarn install
+COPY package.json package-lock.json ./
+RUN npm ci || npm install
 
 # App code
 COPY . .
