@@ -10,15 +10,15 @@
         </div>
         <div class="flex-none">
           <ul class="menu menu-horizontal px-1">
-            <li><router-link to="/chat" class="font-medium text-primary">💬 AI Chat</router-link></li>
-            <li><router-link to="/" class="font-medium">Dashboard</router-link></li>
-            <li><router-link to="/transactions" class="font-medium">Transactions</router-link></li>
-            <li><router-link to="/reports" class="font-medium">Reports</router-link></li>
+            <li><router-link to="/" class="font-medium">💬 Chat</router-link></li>
+            <li><router-link to="/dashboard" class="font-medium">📊 Dashboard</router-link></li>
             <li>
               <details>
-                <summary class="font-medium">More</summary>
+                <summary class="font-medium">Browse</summary>
                 <ul class="bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
-                  <li><router-link to="/chart-of-accounts">Chart of Accounts</router-link></li>
+                  <li><router-link to="/transactions">💳 Transactions</router-link></li>
+                  <li><router-link to="/reports">📈 Reports</router-link></li>
+                  <li><router-link to="/chart-of-accounts">📋 Chart of Accounts</router-link></li>
                   <li><router-link to="/linked-accounts">🏦 Linked Accounts</router-link></li>
                   <li><router-link to="/rules">⚡ Auto-Rules</router-link></li>
                 </ul>

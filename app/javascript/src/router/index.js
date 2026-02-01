@@ -16,14 +16,14 @@ import Chat from '../views/Chat.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { guest: true } },
-  { path: '/', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
-  { path: '/dashboard', redirect: '/' },
+  { path: '/', name: 'Chat', component: Chat, meta: { requiresAuth: true } },
+  { path: '/chat', redirect: '/' },
+  { path: '/dashboard', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
   { path: '/reports', name: 'Reports', component: Reports, meta: { requiresAuth: true } },
   { path: '/chart-of-accounts', name: 'ChartOfAccounts', component: ChartOfAccounts, meta: { requiresAuth: true, canEdit: true } },
   { path: '/transactions', name: 'Transactions', component: Transactions, meta: { requiresAuth: true } },
   { path: '/linked-accounts', name: 'LinkedAccounts', component: LinkedAccounts, meta: { requiresAuth: true } },
   { path: '/rules', name: 'CategorizationRules', component: CategorizationRules, meta: { requiresAuth: true, canEdit: true } },
-  { path: '/chat', name: 'Chat', component: Chat, meta: { requiresAuth: true } },
   
   // Admin routes (executive + manager)
   { path: '/admin/users', name: 'AdminUsers', component: AdminUsers, meta: { requiresAuth: true, requiresAdmin: true } },
@@ -51,14 +51,14 @@ router.beforeEach((to) => {
   }
   // Executive + Manager can see admin
   if (to.meta.requiresAdmin && role !== 'executive' && role !== 'manager') {
-    return { name: 'Dashboard' }
+    return { name: 'Chat' }
   }
   // Only executive can access settings
   if (to.meta.requiresExecutive && role !== 'executive') {
-    return { name: 'Dashboard' }
+    return { name: 'Chat' }
   }
   if (to.meta.guest && token) {
-    return { name: 'Dashboard' }
+    return { name: 'Chat' }
   }
 })
 

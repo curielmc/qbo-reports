@@ -5,12 +5,12 @@
       <div class="flex items-center gap-3">
         <div class="avatar placeholder">
           <div class="bg-primary text-primary-content rounded-full w-10">
-            <span class="text-xl">🤖</span>
+            <span class="text-xl">📊</span>
           </div>
         </div>
         <div>
-          <h1 class="text-lg font-bold">ecfoBooks AI</h1>
-          <p class="text-xs text-base-content/50">Ask anything about your finances</p>
+          <h1 class="text-lg font-bold">ecfoBooks</h1>
+          <p class="text-xs text-base-content/50">Your AI bookkeeper — ask anything, I'll handle the rest</p>
         </div>
       </div>
       <div class="flex gap-2">
@@ -20,32 +20,42 @@
 
     <!-- Messages -->
     <div ref="messagesContainer" class="flex-1 overflow-y-auto py-4 space-y-4">
-      <!-- Welcome message if no history -->
-      <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center">
-        <div class="text-6xl mb-4">💬</div>
-        <h2 class="text-2xl font-bold mb-2">Talk to your books</h2>
-        <p class="text-base-content/60 mb-8 max-w-md">
-          Ask questions in plain English. I can look up transactions, run reports, categorize expenses, and spot trends.
+      <!-- Welcome -->
+      <div v-if="messages.length === 0" class="flex flex-col items-center justify-center h-full text-center px-4">
+        <div class="text-6xl mb-4">📊</div>
+        <h2 class="text-2xl font-bold mb-2">Your AI Bookkeeper</h2>
+        <p class="text-base-content/60 mb-8 max-w-lg">
+          I handle everything — categorization, reconciliation, reports, rules. Just tell me what you need in plain English.
         </p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-lg">
-          <button v-for="prompt in quickPrompts" :key="prompt" 
-            @click="sendMessage(prompt)"
-            class="btn btn-outline btn-sm text-left normal-case h-auto py-3 px-4">
-            {{ prompt }}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl w-full">
+          <button v-for="prompt in quickPrompts" :key="prompt.text"
+            @click="sendMessage(prompt.text)"
+            class="btn btn-outline btn-sm text-left normal-case h-auto py-3 px-4 gap-2">
+            <span>{{ prompt.icon }}</span>
+            <span>{{ prompt.text }}</span>
           </button>
         </div>
       </div>
 
       <!-- Message bubbles -->
-      <div v-for="msg in messages" :key="msg.id" 
+      <div v-for="msg in messages" :key="msg.id"
         :class="['chat', msg.role === 'user' ? 'chat-end' : 'chat-start']">
         <div class="chat-image avatar placeholder">
           <div :class="['rounded-full w-8', msg.role === 'user' ? 'bg-secondary text-secondary-content' : 'bg-primary text-primary-content']">
-            <span>{{ msg.role === 'user' ? '👤' : '🤖' }}</span>
+            <span>{{ msg.role === 'user' ? '👤' : '📊' }}</span>
           </div>
         </div>
-        <div :class="['chat-bubble', msg.role === 'user' ? 'chat-bubble-secondary' : 'chat-bubble-primary']">
+        <div :class="['chat-bubble max-w-2xl', msg.role === 'user' ? 'chat-bubble-secondary' : '']">
           <div v-html="formatMessage(msg.content)"></div>
+          
+          <!-- Action buttons from AI suggestions -->
+          <div v-if="msg.suggestions?.length" class="mt-3 flex flex-wrap gap-2">
+            <button v-for="s in msg.suggestions" :key="s.transaction_id"
+              @click="applySuggestion(s)"
+              class="btn btn-xs btn-outline gap-1">
+              ✅ {{ s.category_name }} ({{ s.confidence }}%)
+            </button>
+          </div>
         </div>
         <div class="chat-footer opacity-50 text-xs">
           {{ formatTime(msg.created_at) }}
@@ -56,39 +66,50 @@
       <div v-if="loading" class="chat chat-start">
         <div class="chat-image avatar placeholder">
           <div class="bg-primary text-primary-content rounded-full w-8">
-            <span>🤖</span>
+            <span>📊</span>
           </div>
         </div>
-        <div class="chat-bubble chat-bubble-primary">
+        <div class="chat-bubble">
           <span class="loading loading-dots loading-sm"></span>
         </div>
       </div>
     </div>
 
+    <!-- Quick Action Bar -->
+    <div v-if="messages.length > 0" class="flex gap-2 py-2 overflow-x-auto">
+      <button @click="sendMessage('Show uncategorized transactions')" class="btn btn-xs btn-ghost whitespace-nowrap">📋 Uncategorized</button>
+      <button @click="sendMessage('Suggest categories for my transactions')" class="btn btn-xs btn-ghost whitespace-nowrap">🤖 AI Categorize</button>
+      <button @click="sendMessage('Run all categorization rules')" class="btn btn-xs btn-ghost whitespace-nowrap">⚡ Run Rules</button>
+      <button @click="sendMessage('What\\'s my P&L this year?')" class="btn btn-xs btn-ghost whitespace-nowrap">📈 P&L</button>
+      <button @click="sendMessage('Find duplicate transactions')" class="btn btn-xs btn-ghost whitespace-nowrap">🔍 Duplicates</button>
+      <button @click="sendMessage('Any anomalies?')" class="btn btn-xs btn-ghost whitespace-nowrap">⚠️ Anomalies</button>
+    </div>
+
     <!-- Input -->
-    <div class="pt-4 border-t border-base-300">
+    <div class="pt-2 border-t border-base-300">
       <form @submit.prevent="sendMessage()" class="flex gap-2">
-        <input 
+        <input
           ref="inputRef"
-          v-model="input" 
-          type="text" 
-          class="input input-bordered flex-1" 
-          placeholder="Ask about your finances..."
+          v-model="input"
+          type="text"
+          class="input input-bordered flex-1"
+          placeholder="Categorize, reconcile, ask questions..."
           :disabled="loading"
           autocomplete="off"
         />
         <button type="submit" class="btn btn-primary" :disabled="loading || !input.trim()">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
+          Send
         </button>
       </form>
+      <p class="text-xs text-base-content/30 mt-1 text-center">
+        Try: "categorize all Starbucks as meals" · "reconcile Chase checking" · "what's my burn rate?"
+      </p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useAppStore } from '../stores/app'
 import { apiClient } from '../api/client'
 
@@ -102,21 +123,23 @@ const inputRef = ref(null)
 const companyId = () => appStore.currentCompany?.id || 1
 
 const quickPrompts = [
-  "What's my P&L this year?",
-  "Show me uncategorized transactions",
-  "What's my burn rate?",
-  "Top 10 vendors by spend",
-  "How much did we spend last month?",
-  "Any unusual transactions recently?"
+  { icon: '📋', text: 'Show uncategorized transactions' },
+  { icon: '🤖', text: 'Suggest categories for my transactions' },
+  { icon: '💰', text: "What's my P&L this year?" },
+  { icon: '🔥', text: "What's my burn rate?" },
+  { icon: '🏦', text: 'Reconcile all my accounts' },
+  { icon: '📈', text: 'Top 10 vendors by spend' },
+  { icon: '⚠️', text: 'Any unusual transactions?' },
+  { icon: '📊', text: 'Compare this month vs last month' },
 ]
 
 const formatMessage = (text) => {
   if (!text) return ''
-  // Simple markdown-like formatting
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br>')
     .replace(/\$([0-9,]+\.?\d*)/g, '<span class="font-mono font-bold">$$1</span>')
+    .replace(/ID:(\d+)/g, '<code class="text-xs">ID:$1</code>')
 }
 
 const formatTime = (ts) => {
@@ -137,7 +160,6 @@ const sendMessage = async (text) => {
 
   input.value = ''
 
-  // Add user message locally
   messages.value.push({
     id: Date.now(),
     role: 'user',
@@ -151,6 +173,11 @@ const sendMessage = async (text) => {
   try {
     const result = await apiClient.post(`/api/v1/companies/${companyId()}/chat`, { message: msg })
     if (result?.message) {
+      // Check if AI returned categorization suggestions
+      const data = result.message.data
+      if (data?.[0]?.action === 'suggest_categories' && data[0].suggestions?.length) {
+        result.message.suggestions = data[0].suggestions
+      }
       messages.value.push(result.message)
     }
   } catch (e) {
@@ -167,6 +194,10 @@ const sendMessage = async (text) => {
   inputRef.value?.focus()
 }
 
+const applySuggestion = async (suggestion) => {
+  await sendMessage(`Categorize transaction ${suggestion.transaction_id} as ${suggestion.category_name}`)
+}
+
 const clearChat = async () => {
   if (!confirm('Clear chat history?')) return
   await apiClient.delete(`/api/v1/companies/${companyId()}/chat`)
@@ -174,7 +205,6 @@ const clearChat = async () => {
 }
 
 onMounted(async () => {
-  // Load chat history
   const history = await apiClient.get(`/api/v1/companies/${companyId()}/chat?limit=50`)
   if (history) messages.value = history
   scrollToBottom()
