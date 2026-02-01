@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold">Companies</h1>
+      <h1 class="text-xl sm:text-3xl font-bold">Companies</h1>
       <button @click="openModal()" class="btn btn-primary btn-sm gap-1">+ New Company</button>
     </div>
 
@@ -33,7 +33,7 @@
 
     <!-- Company Modal -->
     <dialog :class="['modal', showModal ? 'modal-open' : '']">
-      <div class="modal-box">
+      <div class="modal-box w-[95vw] sm:w-auto max-h-[90vh]">
         <h3 class="font-bold text-lg mb-4">{{ editing ? 'Edit Company' : 'New Company' }}</h3>
         <form @submit.prevent="saveCompany">
           <div class="form-control mb-3">
@@ -51,7 +51,7 @@
 
     <!-- Members Modal -->
     <dialog :class="['modal', showMembers ? 'modal-open' : '']">
-      <div class="modal-box max-w-2xl">
+      <div class="modal-box max-w-2xl w-full sm:w-auto">
         <h3 class="font-bold text-lg mb-4">{{ selectedCompany?.name }} — Members</h3>
         
         <!-- Add member -->
@@ -69,7 +69,7 @@
         </div>
 
         <!-- Current members -->
-        <table class="table table-sm">
+        <table class="table table-sm sm:table-md table-sm">
           <thead>
             <tr>
               <th>Name</th>

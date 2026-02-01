@@ -2,7 +2,7 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-3xl font-bold">Transactions</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Transactions</h1>
         <p class="text-base-content/60 mt-1">
           {{ pagination.total }} transactions
           <span v-if="selectedIds.size > 0" class="text-primary"> · {{ selectedIds.size }} selected</span>
@@ -89,7 +89,7 @@
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
-          <table class="table table-sm">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <thead>
               <tr class="bg-base-200">
                 <th><input type="checkbox" class="checkbox checkbox-sm" @change="toggleAll" :checked="allSelected" /></th>

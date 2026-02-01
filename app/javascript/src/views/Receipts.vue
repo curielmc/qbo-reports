@@ -2,7 +2,7 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-3xl font-bold">Receipts</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Receipts</h1>
         <p class="text-base-content/60 mt-1">Upload receipts — AI reads and matches them to transactions</p>
       </div>
       <label class="btn btn-primary">
@@ -12,7 +12,7 @@
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <div class="stat bg-base-100 rounded-box shadow p-4">
         <div class="stat-title text-xs">Total</div>
         <div class="stat-value text-xl">{{ receipts.length }}</div>

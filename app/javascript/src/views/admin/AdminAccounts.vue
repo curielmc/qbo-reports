@@ -2,7 +2,7 @@
   <div>
     <div class="flex justify-between items-center mb-8">
       <div>
-        <h1 class="text-3xl font-bold">Account Management</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Account Management</h1>
         <p class="text-base-content/60 mt-1">Manage financial accounts across companies</p>
       </div>
       <button @click="openModal()" class="btn btn-primary gap-2">
@@ -30,7 +30,7 @@
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body">
         <div class="overflow-x-auto">
-          <table class="table">
+          <table class="table table-sm sm:table-md">
             <thead>
               <tr>
                 <th>Account Name</th>
@@ -70,7 +70,7 @@
 
     <!-- Add/Edit Modal -->
     <dialog :class="['modal', showModal ? 'modal-open' : '']">
-      <div class="modal-box">
+      <div class="modal-box w-[95vw] sm:w-auto max-h-[90vh]">
         <h3 class="font-bold text-lg mb-4">{{ editing ? 'Edit Account' : 'New Account' }}</h3>
         <form @submit.prevent="saveAccount">
           <div class="form-control mb-4">

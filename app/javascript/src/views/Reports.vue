@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold">Reports</h1>
+      <h1 class="text-xl sm:text-3xl font-bold">Reports</h1>
       <div class="flex items-center gap-3">
         <input type="date" v-model="startDate" @change="refresh" class="input input-bordered input-sm" />
         <span class="text-base-content/40">to</span>
@@ -38,7 +38,7 @@
       <div class="card bg-base-100 shadow">
         <div class="card-body">
           <h2 class="card-title text-success">Income</h2>
-          <table class="table table-sm">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <tbody>
               <tr v-for="[name, amount] in plData.income" :key="name">
                 <td>{{ name }}</td>
@@ -58,7 +58,7 @@
       <div class="card bg-base-100 shadow">
         <div class="card-body">
           <h2 class="card-title text-error">Expenses</h2>
-          <table class="table table-sm">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <tbody>
               <tr v-for="[name, amount] in plData.expenses" :key="name">
                 <td>{{ name }}</td>
@@ -95,7 +95,7 @@
       <div v-for="section in bsSections" :key="section.title" class="card bg-base-100 shadow">
         <div class="card-body">
           <h2 :class="['card-title', section.color]">{{ section.title }}</h2>
-          <table class="table table-sm">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <tbody>
               <tr v-for="[name, amount] in section.items" :key="name">
                 <td>{{ name }}</td>
@@ -123,7 +123,7 @@
       <div class="card bg-base-100 shadow">
         <div class="card-body">
           <div class="overflow-x-auto">
-            <table class="table table-sm">
+            <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
               <thead>
                 <tr class="bg-base-200">
                   <th>Code</th>
@@ -166,7 +166,7 @@
             </div>
             <span class="badge badge-xs badge-outline">{{ entry.source }}</span>
           </div>
-          <table class="table table-xs">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-xs">
             <thead>
               <tr>
                 <th>Account</th>

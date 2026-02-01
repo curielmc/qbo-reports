@@ -2,7 +2,7 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-3xl font-bold">Linked Accounts</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Linked Accounts</h1>
         <p class="text-base-content/60 mt-1">Connect bank accounts via Plaid to sync transactions automatically</p>
       </div>
       <button @click="linkAccount" class="btn btn-primary gap-2" :disabled="linking">
@@ -49,7 +49,7 @@
 
         <!-- Accounts under this item -->
         <div class="overflow-x-auto mt-4">
-          <table class="table table-sm">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <thead>
               <tr>
                 <th>Account</th>

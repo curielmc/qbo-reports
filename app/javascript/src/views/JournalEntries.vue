@@ -2,7 +2,7 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-3xl font-bold">Journal Entries</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Journal Entries</h1>
         <p class="text-base-content/60 mt-1">Adjustments, recurring entries, and the general journal</p>
       </div>
       <div class="flex gap-2">
@@ -86,7 +86,7 @@
 
           <!-- Journal Lines -->
           <div class="overflow-x-auto mt-3">
-            <table class="table table-xs">
+            <table class="table table-sm sm:table-md table-sm sm:table-md table-xs">
               <thead>
                 <tr><th>Account</th><th class="text-right">Debit</th><th class="text-right">Credit</th><th>Memo</th></tr>
               </thead>
@@ -111,7 +111,7 @@
 
     <!-- New Entry Modal -->
     <dialog :class="['modal', showNewEntry ? 'modal-open' : '']">
-      <div class="modal-box max-w-2xl">
+      <div class="modal-box max-w-2xl w-full sm:w-auto">
         <h3 class="font-bold text-lg mb-4">{{ editingEntry ? 'Edit' : 'New' }} Journal Entry</h3>
         <form @submit.prevent="saveEntry">
           <div class="grid grid-cols-2 gap-4 mb-4">
@@ -148,7 +148,7 @@
               <button type="button" @click="addLine" class="btn btn-ghost btn-xs">+ Add Line</button>
             </div>
             <div class="overflow-x-auto">
-              <table class="table table-sm">
+              <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
                 <thead>
                   <tr>
                     <th>Account</th>
@@ -201,7 +201,7 @@
 
     <!-- Templates Modal -->
     <dialog :class="['modal', showTemplates ? 'modal-open' : '']">
-      <div class="modal-box max-w-lg">
+      <div class="modal-box max-w-lg w-full sm:w-auto">
         <h3 class="font-bold text-lg mb-4">📑 Journal Entry Templates</h3>
         <div class="space-y-3">
           <div v-for="tmpl in templates" :key="tmpl.id"

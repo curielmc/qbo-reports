@@ -2,7 +2,7 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-3xl font-bold">Chart of Accounts</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Chart of Accounts</h1>
         <p class="text-base-content/60 mt-1">{{ accounts.length }} accounts</p>
       </div>
       <div class="flex gap-2">
@@ -25,7 +25,7 @@
       <div class="card-body">
         <h2 class="card-title capitalize">{{ type }}</h2>
         <div class="overflow-x-auto">
-          <table class="table table-sm">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <thead>
               <tr>
                 <th>Code</th>
@@ -58,7 +58,7 @@
 
     <!-- Modal -->
     <dialog :class="['modal', showModal ? 'modal-open' : '']">
-      <div class="modal-box">
+      <div class="modal-box w-[95vw] sm:w-auto max-h-[90vh]">
         <h3 class="font-bold text-lg mb-4">{{ editing ? 'Edit Account' : 'New Account' }}</h3>
         <form @submit.prevent="saveAccount">
           <div class="form-control mb-3">

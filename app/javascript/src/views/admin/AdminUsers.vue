@@ -1,14 +1,14 @@
 <template>
   <div>
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-3xl font-bold">Users</h1>
+      <h1 class="text-xl sm:text-3xl font-bold">Users</h1>
       <button @click="openModal()" class="btn btn-primary btn-sm gap-1">+ Add User</button>
     </div>
 
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
-          <table class="table">
+          <table class="table table-sm sm:table-md">
             <thead>
               <tr class="bg-base-200">
                 <th>Name</th>
@@ -48,7 +48,7 @@
 
     <!-- Modal -->
     <dialog :class="['modal', showModal ? 'modal-open' : '']">
-      <div class="modal-box">
+      <div class="modal-box w-[95vw] sm:w-auto max-h-[90vh]">
         <h3 class="font-bold text-lg mb-4">{{ editing ? 'Edit User' : 'New User' }}</h3>
         <form @submit.prevent="saveUser">
           <div class="grid grid-cols-2 gap-3 mb-3">

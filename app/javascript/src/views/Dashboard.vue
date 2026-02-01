@@ -1,43 +1,43 @@
 <template>
   <div>
     <!-- Stats Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
       <div class="stat bg-base-100 rounded-box shadow">
         <div class="stat-figure text-primary">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div class="stat-title">Net Worth</div>
-        <div class="stat-value text-primary text-2xl">{{ formatCurrency(data.financials?.net_worth) }}</div>
+        <div class="stat-value text-primary text-lg sm:text-2xl">{{ formatCurrency(data.financials?.net_worth) }}</div>
         <div class="stat-desc">Assets minus liabilities</div>
       </div>
 
       <div class="stat bg-base-100 rounded-box shadow">
         <div class="stat-figure text-success">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
           </svg>
         </div>
         <div class="stat-title">YTD Income</div>
-        <div class="stat-value text-success text-2xl">{{ formatCurrency(data.financials?.ytd_income) }}</div>
+        <div class="stat-value text-success text-lg sm:text-2xl">{{ formatCurrency(data.financials?.ytd_income) }}</div>
         <div class="stat-desc">Since Jan 1</div>
       </div>
 
       <div class="stat bg-base-100 rounded-box shadow">
         <div class="stat-figure text-error">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
           </svg>
         </div>
         <div class="stat-title">YTD Expenses</div>
-        <div class="stat-value text-error text-2xl">{{ formatCurrency(data.financials?.ytd_expenses) }}</div>
+        <div class="stat-value text-error text-lg sm:text-2xl">{{ formatCurrency(data.financials?.ytd_expenses) }}</div>
         <div class="stat-desc">Since Jan 1</div>
       </div>
 
       <div :class="['stat bg-base-100 rounded-box shadow']">
         <div class="stat-figure text-warning">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
         </div>
@@ -48,7 +48,7 @@
     </div>
 
     <!-- Middle Row: Net Income + Assets/Liabilities -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 mb-6 sm:mb-8">
       <!-- Net Income Card -->
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
@@ -108,7 +108,7 @@
     </div>
 
     <!-- Quick Actions -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
       <router-link to="/chat" class="btn btn-primary gap-2">💬 Ask AI</router-link>
       <router-link to="/reports" class="btn btn-outline gap-2">📈 Reports</router-link>
       <router-link to="/linked-accounts" class="btn btn-outline gap-2">🏦 Link Account</router-link>
@@ -123,7 +123,7 @@
           <router-link to="/transactions" class="btn btn-ghost btn-sm">View All →</router-link>
         </div>
         <div class="overflow-x-auto">
-          <table class="table table-sm">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <thead>
               <tr>
                 <th>Date</th>

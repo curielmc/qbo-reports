@@ -2,7 +2,7 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-3xl font-bold">Billing & Usage</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Billing & Usage</h1>
         <p class="text-base-content/60 mt-1">{{ companyName }}</p>
       </div>
       <div class="text-right">
@@ -12,7 +12,7 @@
     </div>
 
     <!-- Top Cards: What They Owe -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
       <div class="card bg-primary text-primary-content shadow-xl">
         <div class="card-body">
           <h2 class="card-title text-primary-content/70 text-sm">Total This Period</h2>
@@ -88,7 +88,7 @@
           </div>
         </div>
         <div class="overflow-x-auto">
-          <table class="table table-sm">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <thead>
               <tr>
                 <th>Date</th>
@@ -120,7 +120,7 @@
     </div>
 
     <!-- Usage Breakdown -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 mb-6 sm:mb-8">
       <!-- By Action Type -->
       <div class="card bg-base-100 shadow-xl">
         <div class="card-body">
@@ -169,7 +169,7 @@
       <div class="card-body">
         <h2 class="card-title text-lg mb-4">Recent Activity</h2>
         <div class="overflow-x-auto">
-          <table class="table table-sm">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <thead>
               <tr>
                 <th>Time</th>

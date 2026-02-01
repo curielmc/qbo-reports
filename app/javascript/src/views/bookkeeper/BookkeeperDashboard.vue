@@ -2,7 +2,7 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-3xl font-bold">Bookkeeper Command Center</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Bookkeeper Command Center</h1>
         <p class="text-base-content/60 mt-1">AI-powered overview of all your clients</p>
       </div>
       <button @click="generateTasks" :disabled="generating" class="btn btn-primary">
@@ -35,7 +35,7 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
       <!-- Task Queue (2/3 width) -->
       <div class="lg:col-span-2">
         <div class="card bg-base-100 shadow-xl">
@@ -127,7 +127,7 @@
 
     <!-- Month-End Close Modal -->
     <dialog :class="['modal', showMonthEnd ? 'modal-open' : '']">
-      <div class="modal-box max-w-lg">
+      <div class="modal-box max-w-lg w-full sm:w-auto">
         <h3 class="font-bold text-lg mb-2">📅 Month-End Close</h3>
         <p class="text-sm text-base-content/50 mb-4">{{ monthEndData?.period }}</p>
         

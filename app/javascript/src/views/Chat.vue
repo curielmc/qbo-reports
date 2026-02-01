@@ -1,24 +1,24 @@
 <template>
-  <div class="flex flex-col h-[calc(100vh-8rem)]">
+  <div class="flex flex-col h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] lg:h-[calc(100vh-6rem)]">
     <!-- Chat Header -->
-    <div class="flex items-center justify-between pb-4 border-b border-base-300">
-      <div class="flex items-center gap-3">
-        <div class="avatar placeholder">
-          <div class="bg-primary text-primary-content rounded-full w-10">
-            <span class="text-xl">📊</span>
+    <div class="flex items-center justify-between pb-3 sm:pb-4 border-b border-base-300">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div class="avatar placeholder flex-shrink-0">
+          <div class="bg-primary text-primary-content rounded-full w-8 sm:w-10">
+            <span class="text-base sm:text-xl">📊</span>
           </div>
         </div>
-        <div>
-          <h1 class="text-lg font-bold">ecfoBooks</h1>
-          <p class="text-xs text-base-content/50">Your AI bookkeeper — ask anything, I'll handle the rest</p>
+        <div class="min-w-0">
+          <h1 class="text-base sm:text-lg font-bold">ecfoBooks</h1>
+          <p class="text-xs text-base-content/50 hidden sm:block">Your AI bookkeeper — ask anything</p>
         </div>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1 sm:gap-3 flex-shrink-0">
         <div v-if="creditRemaining !== null" 
-          :class="['badge', creditRemaining > 50 ? 'badge-success' : creditRemaining > 10 ? 'badge-warning' : 'badge-error']">
-          💳 ${{ creditRemaining.toFixed(2) }} credit
+          :class="['badge badge-sm sm:badge-md', creditRemaining > 50 ? 'badge-success' : creditRemaining > 10 ? 'badge-warning' : 'badge-error']">
+          💳 ${{ creditRemaining.toFixed(0) }}
         </div>
-        <button @click="clearChat" class="btn btn-ghost btn-sm" title="Clear history">🗑️</button>
+        <button @click="clearChat" class="btn btn-ghost btn-xs sm:btn-sm" title="Clear history">🗑️</button>
       </div>
     </div>
 
@@ -31,12 +31,12 @@
         <p class="text-base-content/60 mb-8 max-w-lg">
           I handle everything — categorization, reconciliation, reports, rules. Just tell me what you need in plain English.
         </p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl w-full">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 max-w-2xl w-full px-2">
           <button v-for="prompt in quickPrompts" :key="prompt.text"
             @click="sendMessage(prompt.text)"
-            class="btn btn-outline btn-sm text-left normal-case h-auto py-3 px-4 gap-2">
+            class="btn btn-outline btn-sm text-left normal-case h-auto py-2 sm:py-3 px-3 sm:px-4 gap-2 text-xs sm:text-sm">
             <span>{{ prompt.icon }}</span>
-            <span>{{ prompt.text }}</span>
+            <span class="truncate">{{ prompt.text }}</span>
           </button>
         </div>
       </div>
@@ -49,7 +49,7 @@
             <span>{{ msg.role === 'user' ? '👤' : '📊' }}</span>
           </div>
         </div>
-        <div :class="['chat-bubble max-w-2xl', msg.role === 'user' ? 'chat-bubble-secondary' : '']">
+        <div :class="['chat-bubble max-w-[85vw] sm:max-w-2xl', msg.role === 'user' ? 'chat-bubble-secondary' : '']">
           <div v-html="formatMessage(msg.content)"></div>
           
           <!-- Action buttons from AI suggestions -->
@@ -79,24 +79,24 @@
       </div>
     </div>
 
-    <!-- Quick Action Bar -->
-    <div v-if="messages.length > 0" class="flex gap-2 py-2 overflow-x-auto">
-      <button @click="sendMessage('Show uncategorized transactions')" class="btn btn-xs btn-ghost whitespace-nowrap">📋 Uncategorized</button>
-      <button @click="sendMessage('Suggest categories for my transactions')" class="btn btn-xs btn-ghost whitespace-nowrap">🤖 AI Categorize</button>
-      <button @click="sendMessage('Run all categorization rules')" class="btn btn-xs btn-ghost whitespace-nowrap">⚡ Run Rules</button>
-      <button @click="sendMessage('What\\'s my P&L this year?')" class="btn btn-xs btn-ghost whitespace-nowrap">📈 P&L</button>
-      <button @click="sendMessage('Find duplicate transactions')" class="btn btn-xs btn-ghost whitespace-nowrap">🔍 Duplicates</button>
-      <button @click="sendMessage('Any anomalies?')" class="btn btn-xs btn-ghost whitespace-nowrap">⚠️ Anomalies</button>
+    <!-- Quick Action Bar (scrollable on mobile) -->
+    <div v-if="messages.length > 0" class="flex gap-1.5 sm:gap-2 py-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
+      <button @click="sendMessage('Show uncategorized transactions')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">📋 Uncategorized</button>
+      <button @click="sendMessage('Suggest categories for my transactions')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">🤖 Categorize</button>
+      <button @click="sendMessage('Run all categorization rules')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">⚡ Rules</button>
+      <button @click="sendMessage('What\\'s my P&L this year?')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">📈 P&L</button>
+      <button @click="sendMessage('What adjustments do I need?')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">📒 Adjustments</button>
+      <button @click="sendMessage('Any anomalies?')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">⚠️ Anomalies</button>
     </div>
 
-    <!-- Input -->
-    <div class="pt-2 border-t border-base-300">
-      <form @submit.prevent="sendMessage()" class="flex gap-2">
+    <!-- Input (mobile-optimized) -->
+    <div class="pt-2 border-t border-base-300 pb-safe">
+      <form @submit.prevent="sendMessage()" class="flex gap-1.5 sm:gap-2">
         <!-- File upload button -->
         <input type="file" ref="fileInput" class="hidden" 
-          accept=".csv,.ofx,.qfx,.pdf,.tsv" @change="uploadStatement" />
+          accept=".csv,.ofx,.qfx,.pdf,.tsv,.jpg,.jpeg,.png" @change="uploadStatement" />
         <button type="button" @click="$refs.fileInput.click()" 
-          class="btn btn-ghost" :disabled="uploading" title="Upload bank statement">
+          class="btn btn-ghost btn-sm sm:btn-md flex-shrink-0" :disabled="uploading" title="Upload statement or receipt">
           <span v-if="uploading" class="loading loading-spinner loading-sm"></span>
           <span v-else>📎</span>
         </button>
@@ -104,16 +104,17 @@
           ref="inputRef"
           v-model="input"
           type="text"
-          class="input input-bordered flex-1"
-          placeholder="Categorize, reconcile, upload statements, ask questions..."
+          class="input input-bordered input-sm sm:input-md flex-1 min-w-0"
+          placeholder="Ask anything..."
           :disabled="loading"
           autocomplete="off"
         />
-        <button type="submit" class="btn btn-primary" :disabled="loading || !input.trim()">
-          Send
+        <button type="submit" class="btn btn-primary btn-sm sm:btn-md flex-shrink-0" :disabled="loading || !input.trim()">
+          <span class="hidden sm:inline">Send</span>
+          <span class="sm:hidden">➤</span>
         </button>
       </form>
-      <p class="text-xs text-base-content/30 mt-1 text-center">
+      <p class="text-xs text-base-content/30 mt-1 text-center hidden sm:block">
         📎 Upload CSV/OFX/PDF statements · "categorize all Starbucks as meals" · "what's my burn rate?"
       </p>
     </div>

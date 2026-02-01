@@ -2,7 +2,11 @@
 <html data-theme="ecfobooks">
   <head>
     <title>ecfoBooks</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2563eb">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
@@ -11,9 +15,32 @@
 
     <!-- Plaid Link -->
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+
+    <style>
+      /* iOS safe area padding */
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0); }
+      .pt-safe { padding-top: env(safe-area-inset-top, 0); }
+
+      /* Hide scrollbar but keep scroll */
+      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+      /* Prevent iOS zoom on input focus */
+      input[type="text"], input[type="number"], input[type="email"],
+      input[type="password"], select, textarea { font-size: 16px !important; }
+
+      /* Mobile table scroll hint */
+      @media (max-width: 640px) {
+        .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+        .table th, .table td { white-space: nowrap; }
+      }
+
+      /* Smooth drawer transitions */
+      .drawer-side { transition: transform 0.3s ease-in-out; }
+    </style>
   </head>
 
-  <body>
+  <body class="overscroll-none">
     <div id="app">
       <%= yield %>
     </div>

@@ -2,7 +2,7 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-3xl font-bold">Reconciliation</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Reconciliation</h1>
         <p class="text-base-content/60 mt-1">Match your books to your bank statements</p>
       </div>
       <button @click="showNewModal = true" class="btn btn-primary">🔄 New Reconciliation</button>
@@ -23,7 +23,7 @@
         </div>
 
         <!-- Balance Comparison -->
-        <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
           <div class="stat bg-base-200 rounded-box p-4">
             <div class="stat-title text-xs">Cleared Balance</div>
             <div class="stat-value text-lg font-mono">{{ formatCurrency(active.book_balance) }}</div>
@@ -49,8 +49,8 @@
         </div>
 
         <!-- Transaction List -->
-        <div class="overflow-x-auto max-h-96 overflow-y-auto">
-          <table class="table table-sm">
+        <div class="overflow-x-auto max-h-[50vh] sm:max-h-96 overflow-y-auto -mx-4 sm:mx-0">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <thead class="sticky top-0 bg-base-100">
               <tr>
                 <th class="w-10">✓</th>
@@ -83,7 +83,7 @@
       <div class="card-body">
         <h2 class="card-title text-lg mb-4">History</h2>
         <div class="overflow-x-auto">
-          <table class="table table-sm">
+          <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <thead>
               <tr>
                 <th>Account</th>
@@ -116,7 +116,7 @@
 
     <!-- New Reconciliation Modal -->
     <dialog :class="['modal', showNewModal ? 'modal-open' : '']">
-      <div class="modal-box">
+      <div class="modal-box w-[95vw] sm:w-auto max-h-[90vh]">
         <h3 class="font-bold text-lg mb-4">Start Reconciliation</h3>
         <form @submit.prevent="startRecon">
           <div class="form-control mb-3">

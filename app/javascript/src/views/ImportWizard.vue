@@ -2,7 +2,7 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-3xl font-bold">Import Data</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Import Data</h1>
         <p class="text-base-content/60 mt-1">Bring your data from any accounting system</p>
       </div>
     </div>
@@ -87,7 +87,7 @@
         <div class="card-body">
           <h2 class="card-title text-lg mb-4">📋 Category Mapping</h2>
           <div class="overflow-x-auto">
-            <table class="table table-sm">
+            <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
               <thead>
                 <tr><th>Your Old Category</th><th>→</th><th>ecfoBooks Category</th></tr>
               </thead>
@@ -129,7 +129,7 @@
         <div class="card-body">
           <h2 class="card-title text-lg mb-4">📊 Transaction Preview (first 20)</h2>
           <div class="overflow-x-auto">
-            <table class="table table-sm">
+            <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
               <thead>
                 <tr>
                   <th>Date</th>

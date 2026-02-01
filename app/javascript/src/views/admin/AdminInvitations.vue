@@ -2,7 +2,7 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-3xl font-bold">Invitations</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Invitations</h1>
         <p class="text-base-content/60 mt-1">Invite clients and team members</p>
       </div>
       <button @click="showModal = true" class="btn btn-primary btn-sm gap-1">📨 Send Invite</button>
@@ -11,7 +11,7 @@
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
-          <table class="table">
+          <table class="table table-sm sm:table-md">
             <thead>
               <tr class="bg-base-200">
                 <th>Email</th>
@@ -50,7 +50,7 @@
 
     <!-- Send Invite Modal -->
     <dialog :class="['modal', showModal ? 'modal-open' : '']">
-      <div class="modal-box">
+      <div class="modal-box w-[95vw] sm:w-auto max-h-[90vh]">
         <h3 class="font-bold text-lg mb-4">Send Invitation</h3>
         <form @submit.prevent="sendInvite">
           <div class="form-control mb-3">

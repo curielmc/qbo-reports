@@ -2,13 +2,13 @@
   <div>
     <div class="flex justify-between items-center mb-6">
       <div>
-        <h1 class="text-3xl font-bold">Billing</h1>
+        <h1 class="text-xl sm:text-3xl font-bold">Billing</h1>
         <p class="text-base-content/60 mt-1">Manage client engagements and AI query billing</p>
       </div>
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
       <div class="stat bg-base-100 rounded-box shadow">
         <div class="stat-title">Active Clients</div>
         <div class="stat-value text-primary">{{ companies.length }}</div>
@@ -31,7 +31,7 @@
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body p-0">
         <div class="overflow-x-auto">
-          <table class="table">
+          <table class="table table-sm sm:table-md">
             <thead>
               <tr class="bg-base-200">
                 <th>Company</th>
@@ -76,7 +76,7 @@
 
     <!-- Edit Billing Modal -->
     <dialog :class="['modal', showModal ? 'modal-open' : '']">
-      <div class="modal-box">
+      <div class="modal-box w-[95vw] sm:w-auto max-h-[90vh]">
         <h3 class="font-bold text-lg mb-4">{{ editingCompany?.name }} — Billing Settings</h3>
         <form @submit.prevent="saveBilling">
           <div class="form-control mb-3">
