@@ -3,9 +3,8 @@
     <div class="card w-96 bg-base-100 shadow-xl">
       <div class="card-body">
         <div class="flex justify-center mb-4">
-          <span class="text-5xl">📊</span>
+          <img src="../assets/logo.svg" alt="ecfoBooks" class="h-12" />
         </div>
-        <h2 class="card-title text-2xl font-bold justify-center mb-2">ecfoBooks</h2>
         <p class="text-center text-base-content/60 mb-6">Your financial command center</p>
         
         <div v-if="error" class="alert alert-error mb-4">

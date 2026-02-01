@@ -1,10 +1,12 @@
 <template>
-  <div id="app" data-theme="corporate">
+  <div id="app" data-theme="ecfobooks">
     <div v-if="isAuthenticated" class="min-h-screen bg-base-200">
       <!-- Navbar -->
       <div class="navbar bg-base-100 shadow-lg">
         <div class="flex-1">
-          <a href="/" class="btn btn-ghost text-xl">📊 ecfoBooks</a>
+          <a href="/" class="btn btn-ghost text-xl gap-1">
+              <img src="./src/assets/logo.svg" alt="ecfoBooks" class="h-8" />
+            </a>
         </div>
         <div class="flex-none">
           <ul class="menu menu-horizontal px-1">

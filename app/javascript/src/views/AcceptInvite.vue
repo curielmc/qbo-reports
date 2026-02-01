@@ -19,8 +19,8 @@
         <!-- Invitation Form -->
         <div v-else-if="invitation">
           <div class="text-center mb-6">
-            <span class="text-5xl">📊</span>
-            <h2 class="text-2xl font-bold mt-2">Welcome to ecfoBooks</h2>
+            <img src="../assets/logo.svg" alt="ecfoBooks" class="h-12 mx-auto" />
+            <h2 class="text-2xl font-bold mt-4">Welcome to ecfoBooks</h2>
             <p class="text-base-content/60 mt-1">Set up your account to get started</p>
           </div>
 
