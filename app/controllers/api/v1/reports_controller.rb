@@ -2,16 +2,16 @@ module Api
   module V1
     class ReportsController < ApplicationController
       before_action :authenticate_user!
-      before_action :set_household
-      before_action :authorize_household_access
+      before_action :set_company
+      before_action :authorize_company_access
 
-      # GET /api/v1/households/:household_id/reports/profit_loss
+      # GET /api/v1/companies/:company_id/reports/profit_loss
       def profit_loss
         start_date = parse_date(params[:start_date]) || Date.current.beginning_of_year
         end_date = parse_date(params[:end_date]) || Date.current
 
         # Income accounts
-        income_accounts = @household.chart_of_accounts.income.active
+        income_accounts = @company.chart_of_accounts.income.active
         income_data = income_accounts.map do |coa|
           transactions = coa.transactions.where(date: start_date..end_date, pending: false)
           total = transactions.sum(:amount)
@@ -24,7 +24,7 @@ module Api
         end
 
         # Expense accounts
-        expense_accounts = @household.chart_of_accounts.expense.active
+        expense_accounts = @company.chart_of_accounts.expense.active
         expense_data = expense_accounts.map do |coa|
           transactions = coa.transactions.where(date: start_date..end_date, pending: false)
           total = transactions.sum(:amount)
@@ -55,12 +55,12 @@ module Api
         }
       end
 
-      # GET /api/v1/households/:household_id/reports/balance_sheet
+      # GET /api/v1/companies/:company_id/reports/balance_sheet
       def balance_sheet
         as_of_date = parse_date(params[:as_of_date]) || Date.current
 
         # Assets
-        asset_accounts = @household.chart_of_accounts.asset.active
+        asset_accounts = @company.chart_of_accounts.asset.active
         asset_data = asset_accounts.map do |coa|
           transactions = coa.transactions.where("date <= ?", as_of_date)
           balance = transactions.sum(:amount)
@@ -73,7 +73,7 @@ module Api
         end
 
         # Liabilities
-        liability_accounts = @household.chart_of_accounts.liability.active
+        liability_accounts = @company.chart_of_accounts.liability.active
         liability_data = liability_accounts.map do |coa|
           transactions = coa.transactions.where("date <= ?", as_of_date)
           balance = transactions.sum(:amount).abs
@@ -86,7 +86,7 @@ module Api
         end
 
         # Equity
-        equity_accounts = @household.chart_of_accounts.equity.active
+        equity_accounts = @company.chart_of_accounts.equity.active
         equity_data = equity_accounts.map do |coa|
           transactions = coa.transactions.where("date <= ?", as_of_date)
           balance = transactions.sum(:amount)
@@ -103,11 +103,11 @@ module Api
         total_equity = equity_data.sum { |e| e[:balance] }
 
         # Retained earnings = Net Income from beginning of time to date
-        income_total = @household.transactions.joins(:chart_of_account)
+        income_total = @company.transactions.joins(:chart_of_account)
                           .where(chart_of_accounts: { account_type: 'income' })
                           .where("transactions.date <= ?", as_of_date)
                           .sum(:amount).abs
-        expense_total = @household.transactions.joins(:chart_of_account)
+        expense_total = @company.transactions.joins(:chart_of_account)
                            .where(chart_of_accounts: { account_type: 'expense' })
                            .where("transactions.date <= ?", as_of_date)
                            .sum(:amount).abs
@@ -134,12 +134,12 @@ module Api
 
       private
 
-      def set_household
-        @household = Household.find(params[:household_id])
+      def set_company
+        @company = Company.find(params[:company_id])
       end
 
-      def authorize_household_access
-        unless current_user.can_manage_household?(@household)
+      def authorize_company_access
+        unless current_user.can_manage_company?(@company)
           render json: { error: 'Unauthorized' }, status: :unauthorized
         end
       end

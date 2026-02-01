@@ -4,7 +4,7 @@ module Api
       class AccountsController < AdminController
         # GET /api/v1/admin/accounts
         def index
-          accounts = Account.includes(:household).order(:name)
+          accounts = Account.includes(:company).order(:name)
           render json: accounts.map { |a|
             {
               id: a.id,
@@ -13,8 +13,8 @@ module Api
               account_type: a.account_type,
               mask: a.mask,
               active: a.active,
-              household_id: a.household_id,
-              household_name: a.household&.name,
+              company_id: a.company_id,
+              company_name: a.company&.name,
               created_at: a.created_at
             }
           }
@@ -50,7 +50,7 @@ module Api
         private
 
         def account_params
-          params.require(:account).permit(:name, :institution, :account_type, :mask, :household_id, :active, :plaid_account_id)
+          params.require(:account).permit(:name, :institution, :account_type, :mask, :company_id, :active, :plaid_account_id)
         end
       end
     end

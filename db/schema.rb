@@ -16,7 +16,7 @@ ActiveRecord::Schema.define(version: 2026_02_01_000006) do
   enable_extension "plpgsql"
 
   create_table "accounts", force: :cascade do |t|
-    t.bigint "household_id", null: false
+    t.bigint "company_id", null: false
     t.string "name", null: false
     t.string "account_type", null: false
     t.string "plaid_account_id"
@@ -27,13 +27,13 @@ ActiveRecord::Schema.define(version: 2026_02_01_000006) do
     t.string "official_name"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["household_id", "account_type"], name: "index_accounts_on_household_id_and_account_type"
-    t.index ["household_id"], name: "index_accounts_on_household_id"
+    t.index ["company_id", "account_type"], name: "index_accounts_on_company_id_and_account_type"
+    t.index ["company_id"], name: "index_accounts_on_company_id"
     t.index ["plaid_account_id"], name: "index_accounts_on_plaid_account_id", unique: true
   end
 
   create_table "chart_of_accounts", force: :cascade do |t|
-    t.bigint "household_id", null: false
+    t.bigint "company_id", null: false
     t.string "code"
     t.string "name", null: false
     t.string "account_type", null: false
@@ -41,28 +41,28 @@ ActiveRecord::Schema.define(version: 2026_02_01_000006) do
     t.string "parent_code"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["household_id", "account_type"], name: "index_chart_of_accounts_on_household_id_and_account_type"
-    t.index ["household_id", "code"], name: "index_chart_of_accounts_on_household_id_and_code", unique: true
-    t.index ["household_id"], name: "index_chart_of_accounts_on_household_id"
+    t.index ["company_id", "account_type"], name: "index_chart_of_accounts_on_company_id_and_account_type"
+    t.index ["company_id", "code"], name: "index_chart_of_accounts_on_company_id_and_code", unique: true
+    t.index ["company_id"], name: "index_chart_of_accounts_on_company_id"
   end
 
-  create_table "household_users", force: :cascade do |t|
-    t.bigint "household_id", null: false
+  create_table "company_users", force: :cascade do |t|
+    t.bigint "company_id", null: false
     t.bigint "user_id", null: false
     t.string "role", default: "client", null: false
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["household_id", "user_id"], name: "index_household_users_on_household_id_and_user_id", unique: true
-    t.index ["household_id"], name: "index_household_users_on_household_id"
-    t.index ["user_id"], name: "index_household_users_on_user_id"
+    t.index ["company_id", "user_id"], name: "index_company_users_on_company_id_and_user_id", unique: true
+    t.index ["company_id"], name: "index_company_users_on_company_id"
+    t.index ["user_id"], name: "index_company_users_on_user_id"
   end
 
-  create_table "households", force: :cascade do |t|
+  create_table "companies", force: :cascade do |t|
     t.string "name", null: false
     t.string "external_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["external_id"], name: "index_households_on_external_id", unique: true
+    t.index ["external_id"], name: "index_companies_on_external_id", unique: true
   end
 
   create_table "transactions", force: :cascade do |t|
@@ -107,10 +107,10 @@ ActiveRecord::Schema.define(version: 2026_02_01_000006) do
     t.index ["role"], name: "index_users_on_role"
   end
 
-  add_foreign_key "accounts", "households"
-  add_foreign_key "chart_of_accounts", "households"
-  add_foreign_key "household_users", "households"
-  add_foreign_key "household_users", "users"
+  add_foreign_key "accounts", "companies"
+  add_foreign_key "chart_of_accounts", "companies"
+  add_foreign_key "company_users", "companies"
+  add_foreign_key "company_users", "users"
   add_foreign_key "transactions", "accounts"
   add_foreign_key "transactions", "chart_of_accounts"
 end

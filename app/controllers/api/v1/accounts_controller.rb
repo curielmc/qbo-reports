@@ -3,17 +3,17 @@ module Api
     class AccountsController < ApplicationController
       skip_before_action :verify_authenticity_token
       before_action :authenticate_user!
-      before_action :set_household
+      before_action :set_company
 
-      # GET /api/v1/households/:household_id/accounts
+      # GET /api/v1/companies/:company_id/accounts
       def index
-        accounts = @household.accounts.order(:name)
+        accounts = @company.accounts.order(:name)
         render json: accounts.map { |a| serialize(a) }
       end
 
-      # POST /api/v1/households/:household_id/accounts
+      # POST /api/v1/companies/:company_id/accounts
       def create
-        account = @household.accounts.build(account_params)
+        account = @company.accounts.build(account_params)
         if account.save
           render json: serialize(account), status: :created
         else
@@ -21,9 +21,9 @@ module Api
         end
       end
 
-      # PUT /api/v1/households/:household_id/accounts/:id
+      # PUT /api/v1/companies/:company_id/accounts/:id
       def update
-        account = @household.accounts.find(params[:id])
+        account = @company.accounts.find(params[:id])
         if account.update(account_params)
           render json: serialize(account)
         else
@@ -31,17 +31,17 @@ module Api
         end
       end
 
-      # DELETE /api/v1/households/:household_id/accounts/:id
+      # DELETE /api/v1/companies/:company_id/accounts/:id
       def destroy
-        account = @household.accounts.find(params[:id])
+        account = @company.accounts.find(params[:id])
         account.destroy
         render json: { message: 'Account deleted' }
       end
 
       private
 
-      def set_household
-        @household = current_user.accessible_households.find(params[:household_id])
+      def set_company
+        @company = current_user.accessible_companies.find(params[:company_id])
       end
 
       def account_params

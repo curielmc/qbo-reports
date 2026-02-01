@@ -1,5 +1,5 @@
 class PlaidItem < ApplicationRecord
-  belongs_to :household
+  belongs_to :company
   has_many :accounts, dependent: :nullify
 
   encrypts :access_token

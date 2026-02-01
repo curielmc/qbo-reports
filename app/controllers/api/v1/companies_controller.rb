@@ -1,13 +1,13 @@
 module Api
   module V1
-    class HouseholdsController < ApplicationController
+    class CompaniesController < ApplicationController
       skip_before_action :verify_authenticity_token
       before_action :authenticate_user!
 
-      # GET /api/v1/households
+      # GET /api/v1/companies
       def index
-        households = current_user.accessible_households.order(:name)
-        render json: households.map { |h|
+        companies = current_user.accessible_companies.order(:name)
+        render json: companies.map { |h|
           {
             id: h.id,
             name: h.name,
@@ -18,10 +18,10 @@ module Api
         }
       end
 
-      # GET /api/v1/households/:id
+      # GET /api/v1/companies/:id
       def show
-        household = current_user.accessible_households.find(params[:id])
-        accounts_with_balances = household.accounts.active.map do |a|
+        company = current_user.accessible_companies.find(params[:id])
+        accounts_with_balances = company.accounts.active.map do |a|
           {
             id: a.id,
             name: a.name,
@@ -35,14 +35,14 @@ module Api
         end
 
         render json: {
-          id: household.id,
-          name: household.name,
+          id: company.id,
+          name: company.name,
           accounts: accounts_with_balances,
           total_assets: accounts_with_balances.select { |a| %w[checking savings depository investment brokerage].include?(a[:account_type]) }
                           .sum { |a| a[:current_balance].to_f },
           total_liabilities: accounts_with_balances.select { |a| %w[credit credit_card loan mortgage].include?(a[:account_type]) }
                                .sum { |a| a[:current_balance].to_f.abs },
-          created_at: household.created_at
+          created_at: company.created_at
         }
       end
     end

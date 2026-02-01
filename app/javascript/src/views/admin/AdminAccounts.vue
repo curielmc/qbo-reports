@@ -3,7 +3,7 @@
     <div class="flex justify-between items-center mb-8">
       <div>
         <h1 class="text-3xl font-bold">Account Management</h1>
-        <p class="text-base-content/60 mt-1">Manage financial accounts across households</p>
+        <p class="text-base-content/60 mt-1">Manage financial accounts across companies</p>
       </div>
       <button @click="openModal()" class="btn btn-primary gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -15,9 +15,9 @@
 
     <!-- Filters -->
     <div class="flex gap-4 mb-6">
-      <select v-model="householdFilter" class="select select-bordered select-sm">
-        <option value="">All Households</option>
-        <option v-for="h in households" :key="h.id" :value="h.id">{{ h.name }}</option>
+      <select v-model="companyFilter" class="select select-bordered select-sm">
+        <option value="">All Companies</option>
+        <option v-for="h in companies" :key="h.id" :value="h.id">{{ h.name }}</option>
       </select>
       <select v-model="typeFilter" class="select select-bordered select-sm">
         <option value="">All Types</option>
@@ -37,7 +37,7 @@
                 <th>Institution</th>
                 <th>Type</th>
                 <th>Mask</th>
-                <th>Household</th>
+                <th>Company</th>
                 <th>Status</th>
                 <th class="text-right">Actions</th>
               </tr>
@@ -48,7 +48,7 @@
                 <td>{{ account.institution || '—' }}</td>
                 <td><span class="badge badge-sm badge-outline">{{ account.account_type }}</span></td>
                 <td class="font-mono text-sm">{{ account.mask ? `****${account.mask}` : '—' }}</td>
-                <td>{{ account.household_name || '—' }}</td>
+                <td>{{ account.company_name || '—' }}</td>
                 <td>
                   <input 
                     type="checkbox" 
@@ -74,10 +74,10 @@
         <h3 class="font-bold text-lg mb-4">{{ editing ? 'Edit Account' : 'New Account' }}</h3>
         <form @submit.prevent="saveAccount">
           <div class="form-control mb-4">
-            <label class="label"><span class="label-text">Household</span></label>
-            <select v-model="form.household_id" class="select select-bordered" required>
-              <option value="">Select household...</option>
-              <option v-for="h in households" :key="h.id" :value="h.id">{{ h.name }}</option>
+            <label class="label"><span class="label-text">Company</span></label>
+            <select v-model="form.company_id" class="select select-bordered" required>
+              <option value="">Select company...</option>
+              <option v-for="h in companies" :key="h.id" :value="h.id">{{ h.name }}</option>
             </select>
           </div>
           <div class="form-control mb-4">
@@ -114,20 +114,20 @@ import { ref, computed, onMounted } from 'vue'
 import { apiClient } from '../../api/client'
 
 const accounts = ref([])
-const households = ref([])
-const householdFilter = ref('')
+const companies = ref([])
+const companyFilter = ref('')
 const typeFilter = ref('')
 const search = ref('')
 const showModal = ref(false)
 const editing = ref(null)
 const accountTypes = ['checking', 'savings', 'credit', 'investment', 'loan', 'other']
-const form = ref({ name: '', institution: '', account_type: 'checking', mask: '', household_id: '' })
+const form = ref({ name: '', institution: '', account_type: 'checking', mask: '', company_id: '' })
 
 const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
 
 const filteredAccounts = computed(() => {
   let list = accounts.value
-  if (householdFilter.value) list = list.filter(a => a.household_id == householdFilter.value)
+  if (companyFilter.value) list = list.filter(a => a.company_id == companyFilter.value)
   if (typeFilter.value) list = list.filter(a => a.account_type === typeFilter.value)
   if (search.value) {
     const s = search.value.toLowerCase()
@@ -140,7 +140,7 @@ const openModal = (account = null) => {
   editing.value = account
   form.value = account 
     ? { ...account } 
-    : { name: '', institution: '', account_type: 'checking', mask: '', household_id: '' }
+    : { name: '', institution: '', account_type: 'checking', mask: '', company_id: '' }
   showModal.value = true
 }
 
@@ -172,6 +172,6 @@ const fetchAccounts = async () => {
 
 onMounted(async () => {
   await fetchAccounts()
-  households.value = await apiClient.get('/api/v1/admin/households') || []
+  companies.value = await apiClient.get('/api/v1/admin/companies') || []
 })
 </script>

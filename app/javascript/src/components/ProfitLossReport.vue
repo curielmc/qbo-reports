@@ -66,15 +66,15 @@ export default {
   },
   methods: {
     async fetchReport() {
-      const householdId = this.$store.state.currentHousehold?.id
-      if (!householdId) return
+      const companyId = this.$store.state.currentCompany?.id
+      if (!companyId) return
 
       const params = new URLSearchParams({
         start_date: this.startDate,
         end_date: this.endDate
       })
 
-      const response = await fetch(`/api/v1/households/${householdId}/reports/profit_loss?${params}`)
+      const response = await fetch(`/api/v1/companies/${companyId}/reports/profit_loss?${params}`)
       this.report = await response.json()
     },
     formatCurrency(amount) {

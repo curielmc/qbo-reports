@@ -1,5 +1,5 @@
 class Account < ApplicationRecord
-  belongs_to :household
+  belongs_to :company
   belongs_to :plaid_item, optional: true
   has_many :transactions, dependent: :destroy
 

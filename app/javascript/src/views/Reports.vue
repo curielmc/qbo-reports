@@ -251,10 +251,10 @@ const formatCurrency = (amount) => {
 const fetchReport = async () => {
   loading.value = true
   try {
-    const householdId = 1 // TODO: Get from store/context
+    const companyId = 1 // TODO: Get from store/context
     const endpoint = currentReport.value === 'pnl' 
-      ? `/api/v1/households/${householdId}/reports/profit_loss`
-      : `/api/v1/households/${householdId}/reports/balance_sheet`
+      ? `/api/v1/companies/${companyId}/reports/profit_loss`
+      : `/api/v1/companies/${companyId}/reports/balance_sheet`
     
     const params = new URLSearchParams()
     if (currentReport.value === 'pnl') {

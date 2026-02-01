@@ -1,7 +1,7 @@
 class Transaction < ApplicationRecord
   belongs_to :account
   belongs_to :chart_of_account, optional: true
-  has_one :household, through: :account
+  has_one :company, through: :account
 
   scope :cleared, -> { where(pending: false) }
   scope :pending, -> { where(pending: true) }

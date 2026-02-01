@@ -15,7 +15,7 @@ Rails.application.routes.draw do
       # Admin routes
       namespace :admin do
         resources :users, only: [:index, :create, :update, :destroy]
-        resources :households, only: [:index, :create, :update, :destroy] do
+        resources :companies, only: [:index, :create, :update, :destroy] do
           member do
             get :members
             post :members, action: :add_member
@@ -48,7 +48,7 @@ Rails.application.routes.draw do
       # Dashboard
       get 'dashboard', to: 'dashboard#show'
 
-      resources :households, only: [:index, :show] do
+      resources :companies, only: [:index, :show] do
         resources :accounts, only: [:index, :create, :update, :destroy]
         resources :transactions, only: [:index, :create, :update, :destroy] do
           collection do

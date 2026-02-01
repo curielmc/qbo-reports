@@ -5,7 +5,7 @@ import ChartOfAccounts from '../views/ChartOfAccounts.vue'
 import Transactions from '../views/Transactions.vue'
 import Login from '../views/Login.vue'
 import AdminUsers from '../views/admin/AdminUsers.vue'
-import AdminHouseholds from '../views/admin/AdminHouseholds.vue'
+import AdminCompanies from '../views/admin/AdminCompanies.vue'
 import AdminAccounts from '../views/admin/AdminAccounts.vue'
 import AdminSettings from '../views/admin/AdminSettings.vue'
 import AdminInvitations from '../views/admin/AdminInvitations.vue'
@@ -23,7 +23,7 @@ const routes = [
   
   // Admin routes (executive + manager)
   { path: '/admin/users', name: 'AdminUsers', component: AdminUsers, meta: { requiresAuth: true, requiresAdmin: true } },
-  { path: '/admin/households', name: 'AdminHouseholds', component: AdminHouseholds, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/companies', name: 'AdminCompanies', component: AdminCompanies, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/accounts', name: 'AdminAccounts', component: AdminAccounts, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/invitations', name: 'AdminInvitations', component: AdminInvitations, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/settings', name: 'AdminSettings', component: AdminSettings, meta: { requiresAuth: true, requiresExecutive: true } },

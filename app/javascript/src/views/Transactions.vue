@@ -195,13 +195,13 @@ const sortBy = (field) => {
 }
 
 const applyFilters = async () => {
-  const householdId = appStore.currentHousehold?.id || 1
-  await appStore.fetchTransactions(householdId, filters.value.startDate, filters.value.endDate)
+  const companyId = appStore.currentCompany?.id || 1
+  await appStore.fetchTransactions(companyId, filters.value.startDate, filters.value.endDate)
 }
 
 onMounted(async () => {
-  const householdId = appStore.currentHousehold?.id || 1
-  await appStore.fetchTransactions(householdId, filters.value.startDate, filters.value.endDate)
-  await appStore.fetchChartOfAccounts(householdId)
+  const companyId = appStore.currentCompany?.id || 1
+  await appStore.fetchTransactions(companyId, filters.value.startDate, filters.value.endDate)
+  await appStore.fetchChartOfAccounts(companyId)
 })
 </script>

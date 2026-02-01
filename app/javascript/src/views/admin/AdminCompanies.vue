@@ -2,20 +2,20 @@
   <div>
     <div class="flex justify-between items-center mb-8">
       <div>
-        <h1 class="text-3xl font-bold">Household Management</h1>
-        <p class="text-base-content/60 mt-1">Manage client households and memberships</p>
+        <h1 class="text-3xl font-bold">Company Management</h1>
+        <p class="text-base-content/60 mt-1">Manage client companies and memberships</p>
       </div>
       <button @click="openModal()" class="btn btn-primary gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
-        Add Household
+        Add Company
       </button>
     </div>
 
-    <!-- Households Grid -->
+    <!-- Companies Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-for="h in households" :key="h.id" class="card bg-base-100 shadow-xl">
+      <div v-for="h in companies" :key="h.id" class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <h2 class="card-title">
             {{ h.name }}
@@ -50,27 +50,27 @@
           <div class="card-actions justify-end mt-2">
             <button @click="openModal(h)" class="btn btn-ghost btn-sm">Edit</button>
             <button @click="manageMembers(h)" class="btn btn-outline btn-sm">Members</button>
-            <button @click="deleteHousehold(h)" class="btn btn-ghost btn-sm text-error">Delete</button>
+            <button @click="deleteCompany(h)" class="btn btn-ghost btn-sm text-error">Delete</button>
           </div>
         </div>
       </div>
 
       <!-- Empty state -->
-      <div v-if="households.length === 0" class="col-span-full text-center py-12">
+      <div v-if="companies.length === 0" class="col-span-full text-center py-12">
         <div class="text-6xl mb-4">🏠</div>
-        <h3 class="text-xl font-semibold mb-2">No households yet</h3>
-        <p class="text-base-content/60 mb-4">Create your first household to get started</p>
-        <button @click="openModal()" class="btn btn-primary">Add Household</button>
+        <h3 class="text-xl font-semibold mb-2">No companies yet</h3>
+        <p class="text-base-content/60 mb-4">Create your first company to get started</p>
+        <button @click="openModal()" class="btn btn-primary">Add Company</button>
       </div>
     </div>
 
     <!-- Add/Edit Modal -->
     <dialog :class="['modal', showModal ? 'modal-open' : '']">
       <div class="modal-box">
-        <h3 class="font-bold text-lg mb-4">{{ editing ? 'Edit Household' : 'New Household' }}</h3>
-        <form @submit.prevent="saveHousehold">
+        <h3 class="font-bold text-lg mb-4">{{ editing ? 'Edit Company' : 'New Company' }}</h3>
+        <form @submit.prevent="saveCompany">
           <div class="form-control">
-            <label class="label"><span class="label-text">Household Name</span></label>
+            <label class="label"><span class="label-text">Company Name</span></label>
             <input v-model="form.name" type="text" class="input input-bordered" placeholder="e.g. Smith Family" required />
           </div>
           <div class="modal-action">
@@ -85,7 +85,7 @@
     <!-- Members Modal -->
     <dialog :class="['modal', showMembersModal ? 'modal-open' : '']">
       <div class="modal-box w-11/12 max-w-3xl">
-        <h3 class="font-bold text-lg mb-4">Members of {{ membersHousehold?.name }}</h3>
+        <h3 class="font-bold text-lg mb-4">Members of {{ membersCompany?.name }}</h3>
         
         <!-- Current Members -->
         <div class="overflow-x-auto mb-4">
@@ -93,7 +93,7 @@
             <thead>
               <tr>
                 <th>User</th>
-                <th>Role in Household</th>
+                <th>Role in Company</th>
                 <th class="text-right">Actions</th>
               </tr>
             </thead>
@@ -102,7 +102,7 @@
                 <td>{{ m.first_name }} {{ m.last_name }} ({{ m.email }})</td>
                 <td>
                   <select 
-                    :value="m.household_role" 
+                    :value="m.company_role" 
                     @change="updateMemberRole(m, $event.target.value)"
                     class="select select-bordered select-xs"
                   >
@@ -144,12 +144,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { apiClient } from '../../api/client'
 
-const households = ref([])
+const companies = ref([])
 const allUsers = ref([])
 const showModal = ref(false)
 const showMembersModal = ref(false)
 const editing = ref(null)
-const membersHousehold = ref(null)
+const membersCompany = ref(null)
 const currentMembers = ref([])
 const addMemberUserId = ref('')
 const form = ref({ name: '' })
@@ -165,51 +165,51 @@ const openModal = (h = null) => {
   showModal.value = true
 }
 
-const saveHousehold = async () => {
+const saveCompany = async () => {
   if (editing.value) {
-    await apiClient.put(`/api/v1/admin/households/${editing.value.id}`, { household: form.value })
+    await apiClient.put(`/api/v1/admin/companies/${editing.value.id}`, { company: form.value })
   } else {
-    await apiClient.post('/api/v1/admin/households', { household: form.value })
+    await apiClient.post('/api/v1/admin/companies', { company: form.value })
   }
   showModal.value = false
-  await fetchHouseholds()
+  await fetchCompanies()
 }
 
-const deleteHousehold = async (h) => {
-  if (confirm(`Delete household "${h.name}"? This cannot be undone.`)) {
-    await apiClient.delete(`/api/v1/admin/households/${h.id}`)
-    await fetchHouseholds()
+const deleteCompany = async (h) => {
+  if (confirm(`Delete company "${h.name}"? This cannot be undone.`)) {
+    await apiClient.delete(`/api/v1/admin/companies/${h.id}`)
+    await fetchCompanies()
   }
 }
 
 const manageMembers = async (h) => {
-  membersHousehold.value = h
-  currentMembers.value = await apiClient.get(`/api/v1/admin/households/${h.id}/members`) || []
+  membersCompany.value = h
+  currentMembers.value = await apiClient.get(`/api/v1/admin/companies/${h.id}/members`) || []
   showMembersModal.value = true
 }
 
 const addMember = async () => {
   if (!addMemberUserId.value) return
-  await apiClient.post(`/api/v1/admin/households/${membersHousehold.value.id}/members`, { user_id: addMemberUserId.value })
-  currentMembers.value = await apiClient.get(`/api/v1/admin/households/${membersHousehold.value.id}/members`) || []
+  await apiClient.post(`/api/v1/admin/companies/${membersCompany.value.id}/members`, { user_id: addMemberUserId.value })
+  currentMembers.value = await apiClient.get(`/api/v1/admin/companies/${membersCompany.value.id}/members`) || []
   addMemberUserId.value = ''
 }
 
 const removeMember = async (m) => {
-  await apiClient.delete(`/api/v1/admin/households/${membersHousehold.value.id}/members/${m.id}`)
-  currentMembers.value = await apiClient.get(`/api/v1/admin/households/${membersHousehold.value.id}/members`) || []
+  await apiClient.delete(`/api/v1/admin/companies/${membersCompany.value.id}/members/${m.id}`)
+  currentMembers.value = await apiClient.get(`/api/v1/admin/companies/${membersCompany.value.id}/members`) || []
 }
 
 const updateMemberRole = async (m, role) => {
-  await apiClient.put(`/api/v1/admin/households/${membersHousehold.value.id}/members/${m.id}`, { role })
+  await apiClient.put(`/api/v1/admin/companies/${membersCompany.value.id}/members/${m.id}`, { role })
 }
 
-const fetchHouseholds = async () => {
-  households.value = await apiClient.get('/api/v1/admin/households') || []
+const fetchCompanies = async () => {
+  companies.value = await apiClient.get('/api/v1/admin/companies') || []
 }
 
 onMounted(async () => {
-  await fetchHouseholds()
+  await fetchCompanies()
   allUsers.value = await apiClient.get('/api/v1/admin/users') || []
 })
 </script>

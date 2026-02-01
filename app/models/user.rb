@@ -10,14 +10,14 @@ class User < ApplicationRecord
     viewer: 'viewer'
   }
 
-  has_many :household_users, dependent: :destroy
-  has_many :households, through: :household_users
+  has_many :company_users, dependent: :destroy
+  has_many :companies, through: :company_users
 
   validates :role, presence: true
 
   # --- Permission helpers ---
 
-  # Can see all households?
+  # Can see all companies?
   def global_access?
     executive? || manager?
   end
@@ -37,22 +37,22 @@ class User < ApplicationRecord
     executive? || manager?
   end
 
-  # Households this user can access
-  def accessible_households
-    return Household.all if global_access?
-    households
+  # Companies this user can access
+  def accessible_companies
+    return Company.all if global_access?
+    companies
   end
 
-  def can_manage_household?(household)
+  def can_manage_company?(company)
     return true if global_access?
-    households.include?(household)
+    companies.include?(company)
   end
 
-  # Can this user edit data in a household?
-  def can_edit_household?(household)
+  # Can this user edit data in a company?
+  def can_edit_company?(company)
     return true if executive?
     return true if manager? # limited edit
-    return true if advisor? && households.include?(household)
+    return true if advisor? && companies.include?(company)
     false
   end
 
@@ -62,7 +62,7 @@ class User < ApplicationRecord
   end
 
   # Can this user view reports?
-  def can_view_reports?(household)
-    can_manage_household?(household)
+  def can_view_reports?(company)
+    can_manage_company?(company)
   end
 end

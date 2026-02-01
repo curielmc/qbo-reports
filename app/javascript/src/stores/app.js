@@ -3,8 +3,8 @@ import { ref, computed } from 'vue'
 import { apiClient } from '../api/client'
 
 export const useAppStore = defineStore('app', () => {
-  const currentHousehold = ref(null)
-  const households = ref([])
+  const currentCompany = ref(null)
+  const companies = ref([])
   const chartOfAccounts = ref([])
   const transactions = ref([])
   const loading = ref(false)
@@ -13,39 +13,39 @@ export const useAppStore = defineStore('app', () => {
     end: new Date().toISOString().split('T')[0]
   })
 
-  async function fetchHouseholds() {
+  async function fetchCompanies() {
     loading.value = true
     try {
-      const data = await apiClient.get('/api/v1/households')
-      households.value = data
+      const data = await apiClient.get('/api/v1/companies')
+      companies.value = data
     } finally {
       loading.value = false
     }
   }
 
-  async function fetchChartOfAccounts(householdId) {
+  async function fetchChartOfAccounts(companyId) {
     loading.value = true
     try {
-      const data = await apiClient.get(`/api/v1/households/${householdId}/chart_of_accounts`)
+      const data = await apiClient.get(`/api/v1/companies/${companyId}/chart_of_accounts`)
       chartOfAccounts.value = data
     } finally {
       loading.value = false
     }
   }
 
-  async function fetchTransactions(householdId, startDate, endDate) {
+  async function fetchTransactions(companyId, startDate, endDate) {
     loading.value = true
     try {
       const params = new URLSearchParams({ start_date: startDate, end_date: endDate })
-      const data = await apiClient.get(`/api/v1/households/${householdId}/transactions?${params}`)
+      const data = await apiClient.get(`/api/v1/companies/${companyId}/transactions?${params}`)
       transactions.value = data
     } finally {
       loading.value = false
     }
   }
 
-  function setCurrentHousehold(household) {
-    currentHousehold.value = household
+  function setCurrentCompany(company) {
+    currentCompany.value = company
   }
 
   function setDateRange(range) {
@@ -53,9 +53,9 @@ export const useAppStore = defineStore('app', () => {
   }
 
   return {
-    currentHousehold, households, chartOfAccounts, transactions,
+    currentCompany, companies, chartOfAccounts, transactions,
     loading, dateRange,
-    fetchHouseholds, fetchChartOfAccounts, fetchTransactions,
-    setCurrentHousehold, setDateRange
+    fetchCompanies, fetchChartOfAccounts, fetchTransactions,
+    setCurrentCompany, setDateRange
   }
 })

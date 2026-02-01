@@ -4,7 +4,7 @@ module Api
       class InvitationsController < AdminController
         # GET /api/v1/admin/invitations
         def index
-          invitations = Invitation.includes(:household, :invited_by).order(created_at: :desc)
+          invitations = Invitation.includes(:company, :invited_by).order(created_at: :desc)
           render json: invitations.map { |inv| serialize(inv) }
         end
 
@@ -40,7 +40,7 @@ module Api
         private
 
         def invitation_params
-          params.require(:invitation).permit(:email, :first_name, :last_name, :role, :household_id, :personal_message)
+          params.require(:invitation).permit(:email, :first_name, :last_name, :role, :company_id, :personal_message)
         end
 
         def serialize(inv)
@@ -50,8 +50,8 @@ module Api
             first_name: inv.first_name,
             last_name: inv.last_name,
             role: inv.role,
-            household_name: inv.household&.name,
-            household_id: inv.household_id,
+            company_name: inv.company&.name,
+            company_id: inv.company_id,
             invited_by: inv.invited_by&.email,
             status: inv.accepted? ? 'accepted' : inv.expired? ? 'expired' : 'pending',
             invite_url: inv.invite_url,

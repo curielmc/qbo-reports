@@ -3,11 +3,11 @@ module Api
     class TransactionsController < ApplicationController
       skip_before_action :verify_authenticity_token
       before_action :authenticate_user!
-      before_action :set_household
+      before_action :set_company
 
-      # GET /api/v1/households/:household_id/transactions
+      # GET /api/v1/companies/:company_id/transactions
       def index
-        transactions = @household.transactions
+        transactions = @company.transactions
           .includes(:account, :chart_of_account)
           .order(date: :desc, created_at: :desc)
 
@@ -62,9 +62,9 @@ module Api
         }
       end
 
-      # POST /api/v1/households/:household_id/transactions
+      # POST /api/v1/companies/:company_id/transactions
       def create
-        account = @household.accounts.find(params[:transaction][:account_id])
+        account = @company.accounts.find(params[:transaction][:account_id])
         transaction = account.transactions.build(transaction_params)
         if transaction.save
           render json: serialize(transaction), status: :created
@@ -73,9 +73,9 @@ module Api
         end
       end
 
-      # PUT /api/v1/households/:household_id/transactions/:id
+      # PUT /api/v1/companies/:company_id/transactions/:id
       def update
-        transaction = @household.transactions.find(params[:id])
+        transaction = @company.transactions.find(params[:id])
         if transaction.update(transaction_params)
           render json: serialize(transaction)
         else
@@ -83,20 +83,20 @@ module Api
         end
       end
 
-      # DELETE /api/v1/households/:household_id/transactions/:id
+      # DELETE /api/v1/companies/:company_id/transactions/:id
       def destroy
-        transaction = @household.transactions.find(params[:id])
+        transaction = @company.transactions.find(params[:id])
         transaction.destroy
         render json: { message: 'Transaction deleted' }
       end
 
-      # POST /api/v1/households/:household_id/transactions/categorize
+      # POST /api/v1/companies/:company_id/transactions/categorize
       # Bulk categorize uncategorized transactions
       def categorize
         ids = params[:transaction_ids] || []
         chart_of_account_id = params[:chart_of_account_id]
 
-        updated = @household.transactions
+        updated = @company.transactions
           .where(id: ids)
           .update_all(chart_of_account_id: chart_of_account_id)
 
@@ -105,8 +105,8 @@ module Api
 
       private
 
-      def set_household
-        @household = current_user.accessible_households.find(params[:household_id])
+      def set_company
+        @company = current_user.accessible_companies.find(params[:company_id])
       end
 
       def transaction_params

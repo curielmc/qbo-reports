@@ -6,16 +6,16 @@ module Api
 
       # GET /api/v1/dashboard
       def show
-        households = current_user.accessible_households
+        companies = current_user.accessible_companies
 
         # Overall stats
-        total_accounts = Account.where(household: households).active.count
-        total_transactions = Transaction.joins(:account).where(accounts: { household_id: households.pluck(:id) }).count
+        total_accounts = Account.where(company: companies).active.count
+        total_transactions = Transaction.joins(:account).where(accounts: { company_id: companies.pluck(:id) }).count
 
         # YTD income/expense
         ytd_start = Date.current.beginning_of_year
         ytd_transactions = Transaction.joins(:account, :chart_of_account)
-          .where(accounts: { household_id: households.pluck(:id) })
+          .where(accounts: { company_id: companies.pluck(:id) })
           .where(date: ytd_start..Date.current)
           .where(pending: false)
 
@@ -28,7 +28,7 @@ module Api
           .sum(:amount).abs
 
         # Total balances
-        all_accounts = Account.where(household: households).active
+        all_accounts = Account.where(company: companies).active
         total_assets = all_accounts
           .where(account_type: %w[checking savings depository investment brokerage])
           .sum(:current_balance)
@@ -39,13 +39,13 @@ module Api
         # Recent transactions
         recent = Transaction.joins(:account)
           .includes(:account, :chart_of_account)
-          .where(accounts: { household_id: households.pluck(:id) })
+          .where(accounts: { company_id: companies.pluck(:id) })
           .order(date: :desc)
           .limit(10)
 
         # Uncategorized count
         uncategorized = Transaction.joins(:account)
-          .where(accounts: { household_id: households.pluck(:id) })
+          .where(accounts: { company_id: companies.pluck(:id) })
           .where(chart_of_account_id: nil)
           .count
 
@@ -54,7 +54,7 @@ module Api
           month_start = i.months.ago.beginning_of_month
           month_end = i.months.ago.end_of_month
           total = Transaction.joins(:account, :chart_of_account)
-            .where(accounts: { household_id: households.pluck(:id) })
+            .where(accounts: { company_id: companies.pluck(:id) })
             .where(chart_of_accounts: { account_type: 'expense' })
             .where(date: month_start..month_end)
             .where(pending: false)
@@ -67,7 +67,7 @@ module Api
 
         render json: {
           stats: {
-            households: households.count,
+            companies: companies.count,
             accounts: total_accounts,
             transactions: total_transactions,
             uncategorized: uncategorized

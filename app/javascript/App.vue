@@ -20,7 +20,7 @@
                 <summary class="font-medium">Admin</summary>
                 <ul class="bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
                   <li><router-link to="/admin/users">Users</router-link></li>
-                  <li><router-link to="/admin/households">Households</router-link></li>
+                  <li><router-link to="/admin/companies">Companies</router-link></li>
                   <li><router-link to="/admin/accounts">Accounts</router-link></li>
                   <li><router-link to="/admin/invitations">Invitations</router-link></li>
                   <li v-if="authStore.canManage"><router-link to="/admin/settings">Settings</router-link></li>

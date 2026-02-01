@@ -12,7 +12,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isClient = computed(() => user.value?.role === 'client')
   const isViewer = computed(() => user.value?.role === 'viewer')
 
-  // Can see admin panel (users list, all households)
+  // Can see admin panel (users list, all companies)
   const isAdmin = computed(() => isExecutive.value || isManager.value)
   // Can modify users, settings, system config
   const canManage = computed(() => isExecutive.value)

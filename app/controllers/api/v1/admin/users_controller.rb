@@ -15,7 +15,7 @@ module Api
               first_name: u.first_name,
               last_name: u.last_name,
               role: u.role,
-              household_count: u.households.count,
+              company_count: u.companies.count,
               created_at: u.created_at,
               # Managers can see but not the edit controls
               editable: current_user.admin_access?
@@ -64,7 +64,7 @@ module Api
             first_name: user.first_name,
             last_name: user.last_name,
             role: user.role,
-            household_count: user.households.count,
+            company_count: user.companies.count,
             created_at: user.created_at,
             editable: current_user.admin_access?
           }

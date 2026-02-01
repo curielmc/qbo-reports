@@ -148,24 +148,24 @@ const closeModal = () => {
 }
 
 const saveAccount = async () => {
-  const householdId = appStore.currentHousehold?.id || 1
+  const companyId = appStore.currentCompany?.id || 1
   if (editingAccount.value) {
-    await apiClient.put(`/api/v1/households/${householdId}/chart_of_accounts/${editingAccount.value.id}`, form.value)
+    await apiClient.put(`/api/v1/companies/${companyId}/chart_of_accounts/${editingAccount.value.id}`, form.value)
   } else {
-    await apiClient.post(`/api/v1/households/${householdId}/chart_of_accounts`, form.value)
+    await apiClient.post(`/api/v1/companies/${companyId}/chart_of_accounts`, form.value)
   }
   closeModal()
-  await appStore.fetchChartOfAccounts(householdId)
+  await appStore.fetchChartOfAccounts(companyId)
 }
 
 const toggleActive = async (account) => {
-  const householdId = appStore.currentHousehold?.id || 1
-  await apiClient.put(`/api/v1/households/${householdId}/chart_of_accounts/${account.id}`, { active: !account.active })
-  await appStore.fetchChartOfAccounts(householdId)
+  const companyId = appStore.currentCompany?.id || 1
+  await apiClient.put(`/api/v1/companies/${companyId}/chart_of_accounts/${account.id}`, { active: !account.active })
+  await appStore.fetchChartOfAccounts(companyId)
 }
 
 onMounted(async () => {
-  const householdId = appStore.currentHousehold?.id || 1
-  await appStore.fetchChartOfAccounts(householdId)
+  const companyId = appStore.currentCompany?.id || 1
+  await appStore.fetchChartOfAccounts(companyId)
 })
 </script>

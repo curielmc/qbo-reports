@@ -41,7 +41,7 @@
               <tr>
                 <th>Recipient</th>
                 <th>Role</th>
-                <th>Household</th>
+                <th>Company</th>
                 <th>Status</th>
                 <th>Sent</th>
                 <th class="text-right">Actions</th>
@@ -54,7 +54,7 @@
                   <div class="text-sm text-base-content/60">{{ inv.email }}</div>
                 </td>
                 <td><span class="badge badge-sm badge-outline">{{ capitalize(inv.role) }}</span></td>
-                <td>{{ inv.household_name || '—' }}</td>
+                <td>{{ inv.company_name || '—' }}</td>
                 <td>
                   <span :class="['badge badge-sm', statusBadge(inv.status)]">
                     {{ capitalize(inv.status) }}
@@ -125,10 +125,10 @@
               </select>
             </div>
             <div class="form-control">
-              <label class="label"><span class="label-text">Assign to Household</span></label>
-              <select v-model="form.household_id" class="select select-bordered">
+              <label class="label"><span class="label-text">Assign to Company</span></label>
+              <select v-model="form.company_id" class="select select-bordered">
                 <option value="">None (assign later)</option>
-                <option v-for="h in households" :key="h.id" :value="h.id">{{ h.name }}</option>
+                <option v-for="h in companies" :key="h.id" :value="h.id">{{ h.name }}</option>
               </select>
             </div>
           </div>
@@ -167,11 +167,11 @@ import { ref, computed, onMounted } from 'vue'
 import { apiClient } from '../../api/client'
 
 const invitations = ref([])
-const households = ref([])
+const companies = ref([])
 const showInviteModal = ref(false)
 const sending = ref(false)
 const toast = ref(null)
-const form = ref({ first_name: '', last_name: '', email: '', role: 'client', household_id: '', personal_message: '' })
+const form = ref({ first_name: '', last_name: '', email: '', role: 'client', company_id: '', personal_message: '' })
 
 const pendingCount = computed(() => invitations.value.filter(i => i.status === 'pending').length)
 const acceptedCount = computed(() => invitations.value.filter(i => i.status === 'accepted').length)
@@ -194,7 +194,7 @@ const sendInvitation = async () => {
       showToast(result.errors.join(', '), 'error')
     } else {
       showInviteModal.value = false
-      form.value = { first_name: '', last_name: '', email: '', role: 'client', household_id: '', personal_message: '' }
+      form.value = { first_name: '', last_name: '', email: '', role: 'client', company_id: '', personal_message: '' }
       showToast('Invitation sent!')
       await fetchInvitations()
     }
@@ -227,6 +227,6 @@ const fetchInvitations = async () => {
 
 onMounted(async () => {
   await fetchInvitations()
-  households.value = await apiClient.get('/api/v1/admin/households') || []
+  companies.value = await apiClient.get('/api/v1/admin/companies') || []
 })
 </script>

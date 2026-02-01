@@ -1,5 +1,5 @@
 class ChartOfAccount < ApplicationRecord
-  belongs_to :household
+  belongs_to :company
   has_many :transactions, dependent: :nullify
 
   enum account_type: {
@@ -11,7 +11,7 @@ class ChartOfAccount < ApplicationRecord
   }
 
   validates :name, :account_type, presence: true
-  validates :code, uniqueness: { scope: :household_id }, allow_nil: true
+  validates :code, uniqueness: { scope: :company_id }, allow_nil: true
 
   # Standard Chart of Accounts templates
   def self.default_chart
@@ -53,10 +53,10 @@ class ChartOfAccount < ApplicationRecord
     }
   end
 
-  def self.setup_defaults_for(household)
+  def self.setup_defaults_for(company)
     default_chart.each do |type, accounts|
       accounts.each do |attrs|
-        household.chart_of_accounts.create!(
+        company.chart_of_accounts.create!(
           attrs.merge(account_type: type)
         )
       end

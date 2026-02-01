@@ -44,7 +44,7 @@
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
-                <th>Households</th>
+                <th>Companies</th>
                 <th>Created</th>
                 <th class="text-right">Actions</th>
               </tr>
@@ -65,7 +65,7 @@
                 <td>
                   <span :class="['badge', roleBadge(user.role)]">{{ capitalize(user.role) }}</span>
                 </td>
-                <td>{{ user.household_count || 0 }}</td>
+                <td>{{ user.company_count || 0 }}</td>
                 <td class="text-sm text-base-content/60">{{ formatDate(user.created_at) }}</td>
                 <td class="text-right">
                   <div v-if="authStore.canManage" class="dropdown dropdown-end">

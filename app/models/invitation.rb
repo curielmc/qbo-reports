@@ -1,5 +1,5 @@
 class Invitation < ApplicationRecord
-  belongs_to :household, optional: true
+  belongs_to :company, optional: true
   belongs_to :invited_by, class_name: 'User'
 
   validates :email, presence: true, format: { with: URI::MailTo::EMAIL_REGEXP }
@@ -28,9 +28,9 @@ class Invitation < ApplicationRecord
 
   def accept!(user)
     update!(accepted_at: Time.current)
-    # Add user to household if specified
-    if household.present?
-      HouseholdUser.find_or_create_by!(user: user, household: household) do |hu|
+    # Add user to company if specified
+    if company.present?
+      CompanyUser.find_or_create_by!(user: user, company: company) do |hu|
         hu.role = role == 'client' ? 'client' : 'advisor'
       end
     end

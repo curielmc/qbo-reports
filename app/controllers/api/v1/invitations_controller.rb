@@ -18,7 +18,7 @@ module Api
             first_name: invitation.first_name,
             last_name: invitation.last_name,
             role: invitation.role,
-            household_name: invitation.household&.name,
+            company_name: invitation.company&.name,
             personal_message: invitation.personal_message,
             status: 'pending'
           }

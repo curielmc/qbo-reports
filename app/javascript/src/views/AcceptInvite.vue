@@ -34,7 +34,7 @@
 
           <div class="bg-base-200 rounded-lg p-4 mb-6">
             <div class="text-sm text-base-content/60">You're joining</div>
-            <div class="font-bold">{{ invitation.household_name || 'ecfoBooks' }}</div>
+            <div class="font-bold">{{ invitation.company_name || 'ecfoBooks' }}</div>
             <div class="text-sm">as {{ capitalize(invitation.role) }}</div>
           </div>
 

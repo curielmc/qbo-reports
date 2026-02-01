@@ -1,7 +1,7 @@
 class CreateAccounts < ActiveRecord::Migration[6.1]
   def change
     create_table :accounts do |t|
-      t.references :household, null: false, foreign_key: true
+      t.references :company, null: false, foreign_key: true
       t.string :name, null: false
       t.string :account_type, null: false  # checking, savings, credit_card, investment, loan, mortgage, other
       t.string :plaid_account_id
@@ -14,6 +14,6 @@ class CreateAccounts < ActiveRecord::Migration[6.1]
     end
 
     add_index :accounts, :plaid_account_id, unique: true
-    add_index :accounts, [:household_id, :account_type]
+    add_index :accounts, [:company_id, :account_type]
   end
 end

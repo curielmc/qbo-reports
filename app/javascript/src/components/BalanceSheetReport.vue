@@ -89,11 +89,11 @@ export default {
   },
   methods: {
     async fetchReport() {
-      const householdId = this.$store.state.currentHousehold?.id
-      if (!householdId) return
+      const companyId = this.$store.state.currentCompany?.id
+      if (!companyId) return
 
       const params = new URLSearchParams({ as_of_date: this.asOfDate })
-      const response = await fetch(`/api/v1/households/${householdId}/reports/balance_sheet?${params}`)
+      const response = await fetch(`/api/v1/companies/${companyId}/reports/balance_sheet?${params}`)
       this.report = await response.json()
     },
     formatCurrency(amount) {
