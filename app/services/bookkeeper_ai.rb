@@ -74,7 +74,21 @@ class BookkeeperAi
     Templates: Depreciation, Accrued Expense, Prepaid Amortization, Deferred Revenue,
     Bad Debt, Owner Distribution, Payroll Accrual, Loan Payment Split
 
+    AI-powered adjustments:
+    - suggest_adjustments: {period_end} → AI analyzes books and suggests all needed adjustments
+    - auto_adjust: {period_end} → create all high-confidence suggestions as drafts
+
+    AI auto-detects and suggests:
+    - Depreciation for fixed assets (straight-line)
+    - Prepaid expense amortization
+    - Accrued expenses (missing regular charges)
+    - Deferred revenue recognition
+    - Reclassifications (negative expense balances)
+    - Large uncategorized deposits needing review
+
     Guide users conversationally:
+    "What adjustments do I need?" → suggest_adjustments
+    "Auto-create the month-end adjustments" → auto_adjust
     "I need to record depreciation" → use template, ask for amount/asset
     "Record an adjusting entry" → help build debit/credit lines
     "Set up monthly rent as recurring" → create recurring entry
@@ -272,6 +286,8 @@ class BookkeeperAi
     when 'create_recurring_entry' then create_recurring_entry(params)
     when 'list_templates' then list_templates
     when 'use_template' then use_template(params)
+    when 'suggest_adjustments' then ai_suggest_adjustments(params)
+    when 'auto_adjust' then ai_auto_adjust(params)
     # Reconciliation
     when 'start_reconciliation' then start_reconciliation(params)
     when 'toggle_cleared' then toggle_cleared(params)
@@ -896,6 +912,25 @@ class BookkeeperAi
     end
     entry.save!
     { action: 'use_template', template: tmpl.name, entry_id: entry.id, amount: amount }
+  end
+
+  def ai_suggest_adjustments(params)
+    ai = JournalEntryAi.new(@company, @user)
+    period_end = params['period_end'] ? Date.parse(params['period_end']) : Date.current.end_of_month
+    suggestions = ai.suggest_adjustments(period_end)
+    {
+      action: 'suggest_adjustments',
+      period: period_end.strftime('%B %Y'),
+      suggestions: suggestions.map { |s| { type: s[:type], memo: s[:memo], amount: s[:amount], confidence: s[:confidence], reasoning: s[:reasoning] } },
+      high_confidence: suggestions.count { |s| s[:confidence] >= 80 }
+    }
+  end
+
+  def ai_auto_adjust(params)
+    ai = JournalEntryAi.new(@company, @user)
+    period_end = params['period_end'] ? Date.parse(params['period_end']) : Date.current.end_of_month
+    created = ai.auto_adjust(period_end)
+    { action: 'auto_adjust', created: created.size, entries: created }
   end
 
   def resolve_account(name)

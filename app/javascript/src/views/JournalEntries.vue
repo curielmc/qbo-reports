@@ -11,6 +11,44 @@
       </div>
     </div>
 
+    <!-- AI Suggestions Banner -->
+    <div v-if="suggestions.length" class="card bg-gradient-to-r from-primary/10 to-secondary/10 shadow-xl mb-6">
+      <div class="card-body">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="card-title text-lg">🤖 AI Suggested Adjustments</h2>
+            <p class="text-sm text-base-content/50">{{ suggestions.length }} suggestions · {{ highConfidence }} high confidence</p>
+          </div>
+          <div class="flex gap-2">
+            <button @click="autoAdjust" class="btn btn-primary btn-sm" :disabled="autoAdjusting">
+              <span v-if="autoAdjusting" class="loading loading-spinner loading-sm"></span>
+              ✨ Create All ({{ highConfidence }})
+            </button>
+            <button @click="fetchSuggestions" class="btn btn-ghost btn-sm">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="space-y-2 max-h-64 overflow-y-auto">
+          <div v-for="(s, i) in suggestions" :key="i"
+            class="flex items-start gap-3 p-3 rounded-lg bg-base-100/80 border">
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span :class="['badge badge-xs', s.confidence >= 80 ? 'badge-success' : s.confidence >= 60 ? 'badge-warning' : 'badge-ghost']">
+                  {{ s.confidence }}%
+                </span>
+                <span class="badge badge-xs badge-outline">{{ s.type }}</span>
+                <span class="font-medium text-sm">{{ s.memo }}</span>
+              </div>
+              <p class="text-xs text-base-content/50 mt-1">{{ s.reasoning }}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-mono font-bold text-sm">{{ formatCurrency(s.amount) }}</p>
+              <button @click="createFromSuggestion(s)" class="btn btn-outline btn-xs mt-1">Create</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Filter Tabs -->
     <div class="tabs tabs-boxed mb-6 bg-base-200 inline-flex">
       <button :class="['tab', filter === 'all' ? 'tab-active' : '']" @click="filter = 'all'; fetchEntries()">All</button>
@@ -204,6 +242,9 @@ const filter = ref('all')
 const showNewEntry = ref(false)
 const showTemplates = ref(false)
 const editingEntry = ref(null)
+const suggestions = ref([])
+const highConfidence = ref(0)
+const autoAdjusting = ref(false)
 
 const form = ref({
   entry_date: new Date().toISOString().split('T')[0],
@@ -294,6 +335,33 @@ const useTemplate = (tmpl) => {
   showNewEntry.value = true
 }
 
+const fetchSuggestions = async () => {
+  const data = await apiClient.get(`/api/v1/companies/${companyId()}/journal_entries/suggestions`)
+  if (data) {
+    suggestions.value = data.suggestions || []
+    highConfidence.value = data.high_confidence || 0
+  }
+}
+
+const autoAdjust = async () => {
+  autoAdjusting.value = true
+  const result = await apiClient.post(`/api/v1/companies/${companyId()}/journal_entries/auto_adjust`)
+  if (result?.created) {
+    alert(`✅ Created ${result.created.length} adjusting entries as drafts. Review and post them.`)
+    suggestions.value = []
+    await fetchEntries()
+  }
+  autoAdjusting.value = false
+}
+
+const createFromSuggestion = async (s) => {
+  const result = await apiClient.post(`/api/v1/companies/${companyId()}/journal_entries/create_from_suggestion`, s)
+  if (result?.id) {
+    suggestions.value = suggestions.value.filter(x => x !== s)
+    await fetchEntries()
+  }
+}
+
 const fetchEntries = async () => {
   const params = filter.value !== 'all' ? `?type=${filter.value}` : ''
   entries.value = await apiClient.get(`/api/v1/companies/${companyId()}/journal_entries${params}`) || []
@@ -308,5 +376,8 @@ onMounted(async () => {
   entries.value = e || []
   chartOfAccounts.value = coa || []
   templates.value = t || []
+  
+  // Fetch AI suggestions
+  fetchSuggestions()
 })
 </script>

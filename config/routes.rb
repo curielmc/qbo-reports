@@ -159,6 +159,9 @@ Rails.application.routes.draw do
             post :reverse
           end
           collection do
+            get :suggestions
+            post :auto_adjust
+            post :create_from_suggestion
             get :recurring_index
             post :create_recurring
             post :process_recurring
@@ -196,6 +199,7 @@ Rails.application.routes.draw do
   get '/receipts', to: 'home#index'
   get '/import', to: 'home#index'
   get '/journal', to: 'home#index'
+  get '/onboarding', to: 'home#index'
   get '/chat', to: 'home#index'
   get '/login', to: 'home#index'
   get '/admin/billing', to: 'home#index'

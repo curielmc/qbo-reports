@@ -194,6 +194,71 @@ module Api
       end
 
       # ============================================
+      # AI SUGGESTIONS
+      # ============================================
+
+      # GET /api/v1/companies/:company_id/journal_entries/suggestions
+      # AI analyzes books and suggests adjustments
+      def suggestions
+        ai = JournalEntryAi.new(@company, current_user)
+        period_end = params[:period_end] ? Date.parse(params[:period_end]) : Date.current.end_of_month
+        suggestions = ai.suggest_adjustments(period_end)
+
+        render json: {
+          period: period_end.strftime('%B %Y'),
+          suggestions: suggestions.map { |s|
+            {
+              type: s[:type],
+              confidence: s[:confidence],
+              memo: s[:memo],
+              amount: s[:amount],
+              reasoning: s[:reasoning],
+              lines: s[:lines],
+              entry_date: s[:entry_date],
+              source: s[:source]
+            }
+          },
+          high_confidence: suggestions.count { |s| s[:confidence] >= 80 },
+          total: suggestions.size
+        }
+      end
+
+      # POST /api/v1/companies/:company_id/journal_entries/auto_adjust
+      # Create all high-confidence AI suggestions as draft entries
+      def auto_adjust
+        ai = JournalEntryAi.new(@company, current_user)
+        period_end = params[:period_end] ? Date.parse(params[:period_end]) : Date.current.end_of_month
+        created = ai.auto_adjust(period_end)
+
+        UsageMeter.new(@company, current_user).track('auto_adjust',
+          summary: "AI auto-adjust: #{created.size} entries for #{period_end.strftime('%B %Y')}")
+
+        render json: {
+          created: created,
+          message: "Created #{created.size} adjusting entries as drafts. Review and post them."
+        }
+      end
+
+      # POST /api/v1/companies/:company_id/journal_entries/create_from_suggestion
+      def create_from_suggestion
+        ai = JournalEntryAi.new(@company, current_user)
+        entry = ai.create_from_suggestion(
+          type: params[:type],
+          confidence: params[:confidence],
+          memo: params[:memo],
+          amount: params[:amount].to_f,
+          lines: params[:lines]&.map { |l| l.to_unsafe_h.symbolize_keys } || [],
+          entry_date: params[:entry_date] ? Date.parse(params[:entry_date]) : Date.current
+        )
+
+        if entry
+          render json: format_entry(entry)
+        else
+          render json: { error: 'Could not create entry' }, status: :unprocessable_entity
+        end
+      end
+
+      # ============================================
       # TEMPLATES
       # ============================================
 
