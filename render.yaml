@@ -7,6 +7,7 @@ services:
     branch: master
     buildCommand: |
       gem install bundler
+      bundle lock --add-platform x86_64-linux
       bundle config set --local without 'development test'
       bundle install
       bundle exec rake assets:precompile
