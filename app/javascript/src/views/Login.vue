@@ -2,9 +2,16 @@
   <div class="min-h-screen flex items-center justify-center bg-base-200">
     <div class="card w-96 bg-base-100 shadow-xl">
       <div class="card-body">
-        <h2 class="card-title text-2xl font-bold justify-center mb-6">QBO Reports</h2>
+        <div class="flex justify-center mb-4">
+          <span class="text-5xl">📊</span>
+        </div>
+        <h2 class="card-title text-2xl font-bold justify-center mb-2">QBO Reports</h2>
+        <p class="text-center text-base-content/60 mb-6">Financial reporting dashboard</p>
         
         <div v-if="error" class="alert alert-error mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           <span>{{ error }}</span>
         </div>
 
@@ -40,6 +47,7 @@
             class="btn btn-primary w-full"
             :disabled="isLoading"
           >
+            <span v-if="isLoading" class="loading loading-spinner loading-sm"></span>
             {{ isLoading ? 'Signing in...' : 'Sign In' }}
           </button>
         </form>
@@ -54,44 +62,31 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'Login',
-  data() {
-    return {
-      email: '',
-      password: '',
-      error: '',
-      isLoading: false
-    }
-  },
-  methods: {
-    async handleLogin() {
-      this.isLoading = true
-      this.error = ''
-      
-      try {
-        const response = await fetch('/api/v1/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: this.email, password: this.password })
-        })
-        
-        const data = await response.json()
-        
-        if (response.ok) {
-          localStorage.setItem('auth_token', data.token)
-          localStorage.setItem('current_user', JSON.stringify(data.user))
-          this.$router.push('/')
-        } else {
-          this.error = data.error || 'Invalid email or password'
-        }
-      } catch (err) {
-        this.error = 'Connection error. Please try again.'
-      } finally {
-        this.isLoading = false
-      }
-    }
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const email = ref('')
+const password = ref('')
+const error = ref('')
+const isLoading = ref(false)
+
+const handleLogin = async () => {
+  isLoading.value = true
+  error.value = ''
+  
+  const result = await authStore.login(email.value, password.value)
+  
+  if (result.success) {
+    router.push('/')
+  } else {
+    error.value = result.error || 'Invalid email or password'
   }
+  
+  isLoading.value = false
 }
 </script>

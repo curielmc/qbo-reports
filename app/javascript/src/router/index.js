@@ -1,12 +1,10 @@
-import Vue from 'vue'
-import VueRouter from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import Dashboard from '../views/Dashboard.vue'
 import Reports from '../views/Reports.vue'
 import ChartOfAccounts from '../views/ChartOfAccounts.vue'
 import Transactions from '../views/Transactions.vue'
 import Login from '../views/Login.vue'
-
-Vue.use(VueRouter)
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { guest: true } },
@@ -17,29 +15,19 @@ const routes = [
   { path: '/transactions', name: 'Transactions', component: Transactions, meta: { requiresAuth: true } },
 ]
 
-const router = new VueRouter({
-  mode: 'history',
+const router = createRouter({
+  history: createWebHistory(),
   routes
 })
 
-// Auth guard
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
   const token = localStorage.getItem('auth_token')
-  
-  if (to.matched.some(record => record.meta.requiresAuth)) {
-    if (!token) {
-      next({ name: 'Login' })
-    } else {
-      next()
-    }
-  } else if (to.matched.some(record => record.meta.guest)) {
-    if (token) {
-      next({ name: 'Dashboard' })
-    } else {
-      next()
-    }
-  } else {
-    next()
+
+  if (to.meta.requiresAuth && !token) {
+    return { name: 'Login' }
+  }
+  if (to.meta.guest && token) {
+    return { name: 'Dashboard' }
   }
 })
 

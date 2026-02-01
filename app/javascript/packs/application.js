@@ -1,15 +1,12 @@
 import '../styles/application.css'
-import Vue from 'vue'
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import App from '../App.vue'
 import router from '../src/router'
-import store from '../store'
-
-Vue.config.productionTip = false
 
 document.addEventListener('DOMContentLoaded', () => {
-  new Vue({
-    router,
-    store,
-    render: h => h(App)
-  }).$mount('#app')
+  const app = createApp(App)
+  app.use(createPinia())
+  app.use(router)
+  app.mount('#app')
 })
