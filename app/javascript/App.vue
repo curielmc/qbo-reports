@@ -15,6 +15,7 @@
             <li><router-link to="/reconciliation" class="font-medium">🔄 Reconcile</router-link></li>
             <li><router-link to="/receipts" class="font-medium">🧾 Receipts</router-link></li>
             <li><router-link to="/billing" class="font-medium">💰 Billing</router-link></li>
+            <li v-if="isBookkeeper"><router-link to="/bookkeeper" class="font-medium">🧑‍💼 Bookkeeper</router-link></li>
             <!-- Notification Bell -->
             <li>
               <button @click="showNotifications = !showNotifications" class="relative">

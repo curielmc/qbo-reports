@@ -55,6 +55,21 @@ Rails.application.routes.draw do
         delete 'items/:id', to: 'plaid#remove_item'
       end
 
+      # Bookkeeper workspace
+      scope :bookkeeper do
+        get 'dashboard', to: 'bookkeeper#dashboard'
+        get 'tasks', to: 'bookkeeper#tasks'
+        patch 'tasks/:id', to: 'bookkeeper#update_task'
+        post 'generate_tasks', to: 'bookkeeper#generate_tasks'
+        get 'anomalies/:company_id', to: 'bookkeeper#anomalies'
+        get 'categorization/:company_id', to: 'bookkeeper#categorization'
+        post 'categorize_batch', to: 'bookkeeper#categorize_batch'
+        get 'vendors/:company_id', to: 'bookkeeper#vendors'
+        get 'month_end/:company_id', to: 'bookkeeper#month_end'
+        patch 'month_end/:company_id/check', to: 'bookkeeper#month_end_check'
+        post 'month_end/:company_id/close', to: 'bookkeeper#month_end_close'
+      end
+
       # Public invitation endpoints
       get 'invitations/:token', to: 'invitations#show'
       post 'invitations/:token/accept', to: 'invitations#accept'
@@ -153,6 +168,7 @@ Rails.application.routes.draw do
   get '/linked-accounts', to: 'home#index'
   get '/rules', to: 'home#index'
   get '/billing', to: 'home#index'
+  get '/bookkeeper', to: 'home#index'
   get '/reconciliation', to: 'home#index'
   get '/receipts', to: 'home#index'
   get '/chat', to: 'home#index'
