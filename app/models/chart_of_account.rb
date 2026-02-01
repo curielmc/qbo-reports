@@ -1,6 +1,8 @@
 class ChartOfAccount < ApplicationRecord
   belongs_to :company
   has_many :transactions, dependent: :nullify
+  has_many :journal_lines, dependent: :restrict_with_error
+  has_many :categorization_rules, dependent: :destroy
 
   enum account_type: {
     asset: 'asset',
@@ -13,53 +15,39 @@ class ChartOfAccount < ApplicationRecord
   validates :name, :account_type, presence: true
   validates :code, uniqueness: { scope: :company_id }, allow_nil: true
 
-  # Standard Chart of Accounts templates
-  def self.default_chart
-    {
-      assets: [
-        { code: '1000', name: 'Cash & Bank Accounts' },
-        { code: '1100', name: 'Checking Account' },
-        { code: '1200', name: 'Savings Account' },
-        { code: '1300', name: 'Investments' },
-        { code: '1400', name: 'Other Assets' }
-      ],
-      liabilities: [
-        { code: '2000', name: 'Credit Cards' },
-        { code: '2100', name: 'Loans' },
-        { code: '2200', name: 'Mortgages' },
-        { code: '2900', name: 'Other Liabilities' }
-      ],
-      equity: [
-        { code: '3000', name: 'Opening Balance' },
-        { code: '3900', name: 'Retained Earnings' }
-      ],
-      income: [
-        { code: '4000', name: 'Salary & Wages' },
-        { code: '4100', name: 'Investment Income' },
-        { code: '4200', name: 'Other Income' }
-      ],
-      expenses: [
-        { code: '5000', name: 'Housing' },
-        { code: '5100', name: 'Food & Dining' },
-        { code: '5200', name: 'Transportation' },
-        { code: '5300', name: 'Healthcare' },
-        { code: '5400', name: 'Insurance' },
-        { code: '5500', name: 'Utilities' },
-        { code: '5600', name: 'Entertainment' },
-        { code: '5700', name: 'Travel' },
-        { code: '5800', name: 'Shopping' },
-        { code: '5900', name: 'Other Expenses' }
-      ]
-    }
+  scope :active, -> { where(active: true) }
+
+  # Get the balance from the general ledger (journal lines)
+  # Assets & Expenses: normal debit balance (debit - credit)
+  # Liabilities, Equity, Income: normal credit balance (credit - debit)
+  def balance(as_of: Date.current)
+    lines = journal_lines.joins(:journal_entry)
+      .where(journal_entries: { posted: true })
+      .where('journal_entries.entry_date <= ?', as_of)
+
+    total_debit = lines.sum(:debit)
+    total_credit = lines.sum(:credit)
+
+    if %w[asset expense].include?(account_type)
+      total_debit - total_credit
+    else
+      total_credit - total_debit
+    end
   end
 
-  def self.setup_defaults_for(company)
-    default_chart.each do |type, accounts|
-      accounts.each do |attrs|
-        company.chart_of_accounts.create!(
-          attrs.merge(account_type: type)
-        )
-      end
+  # Balance for a date range (for P&L)
+  def period_balance(start_date:, end_date:)
+    lines = journal_lines.joins(:journal_entry)
+      .where(journal_entries: { posted: true })
+      .where(journal_entries: { entry_date: start_date..end_date })
+
+    total_debit = lines.sum(:debit)
+    total_credit = lines.sum(:credit)
+
+    if %w[asset expense].include?(account_type)
+      total_debit - total_credit
+    else
+      total_credit - total_debit
     end
   end
 end

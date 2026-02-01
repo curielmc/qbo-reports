@@ -68,9 +68,11 @@ Rails.application.routes.draw do
         post 'chat', to: 'chat#create'
         delete 'chat', to: 'chat#destroy'
 
-        # Reports
+        # Reports (all driven by general ledger / journal entries)
         get 'reports/profit_loss', to: 'reports#profit_loss'
         get 'reports/balance_sheet', to: 'reports#balance_sheet'
+        get 'reports/general_ledger', to: 'reports#general_ledger'
+        get 'reports/trial_balance', to: 'reports#trial_balance'
 
         # Exports
         get 'exports/transactions', to: 'exports#transactions_csv'

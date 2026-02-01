@@ -12,6 +12,7 @@ class Company < ApplicationRecord
   has_many :chart_of_accounts, dependent: :destroy
   has_many :categorization_rules, dependent: :destroy
   has_many :chat_messages, dependent: :destroy
+  has_many :journal_entries, dependent: :destroy
 
   validates :name, presence: true
 end
