@@ -1,56 +1,26 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-8">
-      <div>
-        <h1 class="text-3xl font-bold">User Management</h1>
-        <p class="text-base-content/60 mt-1">Manage system users and permissions</p>
-      </div>
-      <button v-if="authStore.canManage" @click="openModal()" class="btn btn-primary gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Add User
-      </button>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold">Users</h1>
+      <button @click="openModal()" class="btn btn-primary btn-sm gap-1">+ Add User</button>
     </div>
 
-    <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <div class="stat bg-base-100 rounded-box shadow" v-for="role in roleCounts" :key="role.name">
-        <div class="stat-title">{{ role.name }}</div>
-        <div class="stat-value text-lg">{{ role.count }}</div>
-      </div>
-    </div>
-
-    <!-- Users Table -->
     <div class="card bg-base-100 shadow-xl">
-      <div class="card-body">
-        <div class="flex gap-4 mb-4">
-          <input 
-            v-model="search" 
-            type="text" 
-            placeholder="Search users..." 
-            class="input input-bordered input-sm flex-1"
-          />
-          <select v-model="roleFilter" class="select select-bordered select-sm">
-            <option value="">All Roles</option>
-            <option v-for="r in roles" :key="r" :value="r">{{ capitalize(r) }}</option>
-          </select>
-        </div>
-
+      <div class="card-body p-0">
         <div class="overflow-x-auto">
           <table class="table">
             <thead>
-              <tr>
+              <tr class="bg-base-200">
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
                 <th>Companies</th>
-                <th>Created</th>
+                <th>Last Login</th>
                 <th class="text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in filteredUsers" :key="user.id" class="hover">
+              <tr v-for="user in users" :key="user.id" class="hover">
                 <td>
                   <div class="flex items-center gap-3">
                     <div class="avatar placeholder">
@@ -61,22 +31,13 @@
                     <span class="font-medium">{{ user.first_name }} {{ user.last_name }}</span>
                   </div>
                 </td>
-                <td>{{ user.email }}</td>
-                <td>
-                  <span :class="['badge', roleBadge(user.role)]">{{ capitalize(user.role) }}</span>
-                </td>
-                <td>{{ user.company_count || 0 }}</td>
-                <td class="text-sm text-base-content/60">{{ formatDate(user.created_at) }}</td>
+                <td class="text-sm">{{ user.email }}</td>
+                <td><span :class="['badge badge-sm', roleBadge(user.role)]">{{ user.role }}</span></td>
+                <td class="text-sm">{{ user.companies_count || 0 }}</td>
+                <td class="text-sm text-base-content/50">{{ user.last_sign_in_at ? formatDate(user.last_sign_in_at) : 'Never' }}</td>
                 <td class="text-right">
-                  <div v-if="authStore.canManage" class="dropdown dropdown-end">
-                    <div tabindex="0" role="button" class="btn btn-ghost btn-xs">⋮</div>
-                    <ul tabindex="0" class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-40">
-                      <li><a @click="openModal(user)">Edit</a></li>
-                      <li><a @click="resetPassword(user)">Reset Password</a></li>
-                      <li><a @click="deleteUser(user)" class="text-error">Delete</a></li>
-                    </ul>
-                  </div>
-                  <span v-else class="text-base-content/40 text-xs">View only</span>
+                  <button @click="openModal(user)" class="btn btn-ghost btn-xs">Edit</button>
+                  <button @click="deleteUser(user)" class="btn btn-ghost btn-xs text-error" v-if="user.id !== currentUserId">Delete</button>
                 </td>
               </tr>
             </tbody>
@@ -85,12 +46,12 @@
       </div>
     </div>
 
-    <!-- Add/Edit Modal -->
+    <!-- Modal -->
     <dialog :class="['modal', showModal ? 'modal-open' : '']">
       <div class="modal-box">
         <h3 class="font-bold text-lg mb-4">{{ editing ? 'Edit User' : 'New User' }}</h3>
         <form @submit.prevent="saveUser">
-          <div class="grid grid-cols-2 gap-4">
+          <div class="grid grid-cols-2 gap-3 mb-3">
             <div class="form-control">
               <label class="label"><span class="label-text">First Name</span></label>
               <input v-model="form.first_name" type="text" class="input input-bordered" required />
@@ -100,26 +61,28 @@
               <input v-model="form.last_name" type="text" class="input input-bordered" required />
             </div>
           </div>
-          <div class="form-control mt-4">
+          <div class="form-control mb-3">
             <label class="label"><span class="label-text">Email</span></label>
             <input v-model="form.email" type="email" class="input input-bordered" required />
           </div>
-          <div class="form-control mt-4">
+          <div class="form-control mb-3">
             <label class="label"><span class="label-text">Role</span></label>
-            <select v-model="form.role" class="select select-bordered">
-              <option v-for="r in roles" :key="r" :value="r">{{ capitalize(r) }}</option>
+            <select v-model="form.role" class="select select-bordered" required>
+              <option value="viewer">Viewer</option>
+              <option value="client">Client</option>
+              <option value="advisor">Advisor</option>
+              <option value="manager">Manager</option>
+              <option value="executive">Executive</option>
             </select>
           </div>
-          <div class="form-control mt-4" v-if="!editing">
+          <div v-if="!editing" class="form-control mb-3">
             <label class="label"><span class="label-text">Password</span></label>
-            <input v-model="form.password" type="password" class="input input-bordered" :required="!editing" minlength="6" />
+            <input v-model="form.password" type="password" class="input input-bordered" required />
           </div>
+          <div v-if="error" class="alert alert-error mb-3"><span>{{ error }}</span></div>
           <div class="modal-action">
             <button type="button" @click="showModal = false" class="btn">Cancel</button>
-            <button type="submit" class="btn btn-primary" :disabled="saving">
-              <span v-if="saving" class="loading loading-spinner loading-sm"></span>
-              {{ saving ? 'Saving...' : 'Save' }}
-            </button>
+            <button type="submit" class="btn btn-primary">Save</button>
           </div>
         </form>
       </div>
@@ -129,51 +92,35 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { apiClient } from '../../api/client'
 
 const authStore = useAuthStore()
 const users = ref([])
-const search = ref('')
-const roleFilter = ref('')
 const showModal = ref(false)
 const editing = ref(null)
-const saving = ref(false)
-const roles = ['executive', 'manager', 'advisor', 'client', 'viewer']
+const error = ref(null)
 const form = ref({ first_name: '', last_name: '', email: '', role: 'client', password: '' })
+const currentUserId = authStore.user?.id
 
-const filteredUsers = computed(() => {
-  let list = users.value
-  if (search.value) {
-    const s = search.value.toLowerCase()
-    list = list.filter(u => 
-      u.email.toLowerCase().includes(s) || 
-      `${u.first_name} ${u.last_name}`.toLowerCase().includes(s)
-    )
-  }
-  if (roleFilter.value) list = list.filter(u => u.role === roleFilter.value)
-  return list
-})
-
-const roleCounts = computed(() => 
-  roles.map(r => ({ name: capitalize(r), count: users.value.filter(u => u.role === r).length }))
-)
-
-const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
-const initials = (u) => `${(u.first_name||'')[0]||''}${(u.last_name||'')[0]||''}`.toUpperCase()
-const formatDate = (d) => d ? new Date(d).toLocaleDateString() : ''
-const roleBadge = (r) => ({ executive: 'badge-error', manager: 'badge-warning', advisor: 'badge-info', client: 'badge-success', viewer: 'badge-ghost' }[r] || 'badge-ghost')
+const initials = (u) => `${(u.first_name || '')[0] || ''}${(u.last_name || '')[0] || ''}`.toUpperCase()
+const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''
+const roleBadge = (role) => {
+  const map = { executive: 'badge-primary', manager: 'badge-secondary', advisor: 'badge-accent', client: 'badge-info', viewer: 'badge-ghost' }
+  return map[role] || 'badge-ghost'
+}
 
 const openModal = (user = null) => {
   editing.value = user
-  form.value = user ? { ...user, password: '' } : { first_name: '', last_name: '', email: '', role: 'client', password: '' }
+  error.value = null
+  form.value = user ? { ...user } : { first_name: '', last_name: '', email: '', role: 'client', password: '' }
   showModal.value = true
 }
 
 const saveUser = async () => {
-  saving.value = true
   try {
+    error.value = null
     if (editing.value) {
       await apiClient.put(`/api/v1/admin/users/${editing.value.id}`, { user: form.value })
     } else {
@@ -181,24 +128,15 @@ const saveUser = async () => {
     }
     showModal.value = false
     await fetchUsers()
-  } finally {
-    saving.value = false
+  } catch (e) {
+    error.value = e.message
   }
 }
 
 const deleteUser = async (user) => {
-  if (confirm(`Delete ${user.email}?`)) {
-    await apiClient.delete(`/api/v1/admin/users/${user.id}`)
-    await fetchUsers()
-  }
-}
-
-const resetPassword = async (user) => {
-  const pwd = prompt('New password (min 6 chars):')
-  if (pwd && pwd.length >= 6) {
-    await apiClient.put(`/api/v1/admin/users/${user.id}`, { user: { password: pwd } })
-    alert('Password updated')
-  }
+  if (!confirm(`Delete ${user.first_name} ${user.last_name}?`)) return
+  await apiClient.delete(`/api/v1/admin/users/${user.id}`)
+  await fetchUsers()
 }
 
 const fetchUsers = async () => {

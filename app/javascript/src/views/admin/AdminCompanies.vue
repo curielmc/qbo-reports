@@ -1,77 +1,44 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-8">
-      <div>
-        <h1 class="text-3xl font-bold">Company Management</h1>
-        <p class="text-base-content/60 mt-1">Manage client companies and memberships</p>
-      </div>
-      <button @click="openModal()" class="btn btn-primary gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Add Company
-      </button>
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold">Companies</h1>
+      <button @click="openModal()" class="btn btn-primary btn-sm gap-1">+ New Company</button>
     </div>
 
-    <!-- Companies Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div v-for="h in companies" :key="h.id" class="card bg-base-100 shadow-xl">
+      <div v-for="company in companies" :key="company.id" class="card bg-base-100 shadow-xl">
         <div class="card-body">
-          <h2 class="card-title">
-            {{ h.name }}
-            <span class="badge badge-sm badge-outline">ID: {{ h.id }}</span>
-          </h2>
-          
-          <div class="grid grid-cols-3 gap-2 my-4">
-            <div class="text-center">
-              <div class="text-2xl font-bold text-primary">{{ h.users_count || 0 }}</div>
-              <div class="text-xs text-base-content/60">Users</div>
-            </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-secondary">{{ h.accounts_count || 0 }}</div>
-              <div class="text-xs text-base-content/60">Accounts</div>
-            </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-accent">{{ h.transactions_count || 0 }}</div>
-              <div class="text-xs text-base-content/60">Transactions</div>
-            </div>
+          <h2 class="card-title">{{ company.name }}</h2>
+          <div class="space-y-1 text-sm text-base-content/60">
+            <p>👥 {{ company.members_count || 0 }} members</p>
+            <p>🏦 {{ company.accounts_count || 0 }} accounts</p>
+            <p>💳 {{ company.transactions_count || 0 }} transactions</p>
           </div>
-
-          <!-- Members -->
-          <div v-if="h.users && h.users.length > 0" class="mb-2">
-            <p class="text-sm font-medium mb-1">Members:</p>
-            <div class="flex flex-wrap gap-1">
-              <span v-for="u in h.users" :key="u.id" class="badge badge-sm badge-outline">
-                {{ u.first_name }} {{ u.last_name }} ({{ u.role }})
-              </span>
-            </div>
-          </div>
-
-          <div class="card-actions justify-end mt-2">
-            <button @click="openModal(h)" class="btn btn-ghost btn-sm">Edit</button>
-            <button @click="manageMembers(h)" class="btn btn-outline btn-sm">Members</button>
-            <button @click="deleteCompany(h)" class="btn btn-ghost btn-sm text-error">Delete</button>
+          <div class="card-actions justify-end mt-4">
+            <button @click="manageMembers(company)" class="btn btn-outline btn-xs">Members</button>
+            <button @click="openModal(company)" class="btn btn-ghost btn-xs">Edit</button>
+            <button @click="deleteCompany(company)" class="btn btn-ghost btn-xs text-error">Delete</button>
           </div>
         </div>
       </div>
 
-      <!-- Empty state -->
-      <div v-if="companies.length === 0" class="col-span-full text-center py-12">
-        <div class="text-6xl mb-4">🏠</div>
-        <h3 class="text-xl font-semibold mb-2">No companies yet</h3>
-        <p class="text-base-content/60 mb-4">Create your first company to get started</p>
-        <button @click="openModal()" class="btn btn-primary">Add Company</button>
+      <!-- Empty State -->
+      <div v-if="companies.length === 0" class="col-span-full text-center py-16">
+        <div class="text-5xl mb-4">🏢</div>
+        <h3 class="text-xl font-bold mb-2">No companies yet</h3>
+        <p class="text-base-content/60 mb-4">Create your first company to start tracking finances</p>
+        <button @click="openModal()" class="btn btn-primary">Create Company</button>
       </div>
     </div>
 
-    <!-- Add/Edit Modal -->
+    <!-- Company Modal -->
     <dialog :class="['modal', showModal ? 'modal-open' : '']">
       <div class="modal-box">
         <h3 class="font-bold text-lg mb-4">{{ editing ? 'Edit Company' : 'New Company' }}</h3>
         <form @submit.prevent="saveCompany">
-          <div class="form-control">
-            <label class="label"><span class="label-text">Company Name</span></label>
-            <input v-model="form.name" type="text" class="input input-bordered" placeholder="e.g. Smith Family" required />
+          <div class="form-control mb-3">
+            <label class="label"><span class="label-text">Name</span></label>
+            <input v-model="form.name" type="text" class="input input-bordered" required />
           </div>
           <div class="modal-action">
             <button type="button" @click="showModal = false" class="btn">Cancel</button>
@@ -83,59 +50,55 @@
     </dialog>
 
     <!-- Members Modal -->
-    <dialog :class="['modal', showMembersModal ? 'modal-open' : '']">
-      <div class="modal-box w-11/12 max-w-3xl">
-        <h3 class="font-bold text-lg mb-4">Members of {{ membersCompany?.name }}</h3>
+    <dialog :class="['modal', showMembers ? 'modal-open' : '']">
+      <div class="modal-box max-w-2xl">
+        <h3 class="font-bold text-lg mb-4">{{ selectedCompany?.name }} — Members</h3>
         
-        <!-- Current Members -->
-        <div class="overflow-x-auto mb-4">
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Role in Company</th>
-                <th class="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="m in currentMembers" :key="m.id">
-                <td>{{ m.first_name }} {{ m.last_name }} ({{ m.email }})</td>
-                <td>
-                  <select 
-                    :value="m.company_role" 
-                    @change="updateMemberRole(m, $event.target.value)"
-                    class="select select-bordered select-xs"
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="advisor">Advisor</option>
-                    <option value="client">Client</option>
-                    <option value="viewer">Viewer</option>
-                  </select>
-                </td>
-                <td class="text-right">
-                  <button @click="removeMember(m)" class="btn btn-ghost btn-xs text-error">Remove</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Add member -->
+        <div class="flex gap-2 mb-4">
+          <select v-model="newMember.user_id" class="select select-bordered select-sm flex-1">
+            <option value="">Select user...</option>
+            <option v-for="u in availableUsers" :key="u.id" :value="u.id">{{ u.first_name }} {{ u.last_name }} ({{ u.email }})</option>
+          </select>
+          <select v-model="newMember.role" class="select select-bordered select-sm">
+            <option value="viewer">Viewer</option>
+            <option value="client">Client</option>
+            <option value="advisor">Advisor</option>
+          </select>
+          <button @click="addMember" class="btn btn-primary btn-sm" :disabled="!newMember.user_id">Add</button>
         </div>
 
-        <!-- Add Member -->
-        <div class="flex gap-2">
-          <select v-model="addMemberUserId" class="select select-bordered select-sm flex-1">
-            <option value="">Select user to add...</option>
-            <option v-for="u in availableUsers" :key="u.id" :value="u.id">
-              {{ u.first_name }} {{ u.last_name }} ({{ u.email }})
-            </option>
-          </select>
-          <button @click="addMember" class="btn btn-primary btn-sm" :disabled="!addMemberUserId">Add</button>
-        </div>
+        <!-- Current members -->
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="m in members" :key="m.user_id">
+              <td>{{ m.first_name }} {{ m.last_name }}</td>
+              <td>
+                <select :value="m.role" @change="updateMemberRole(m, $event.target.value)" class="select select-bordered select-xs">
+                  <option value="viewer">Viewer</option>
+                  <option value="client">Client</option>
+                  <option value="advisor">Advisor</option>
+                </select>
+              </td>
+              <td class="text-right">
+                <button @click="removeMember(m)" class="btn btn-ghost btn-xs text-error">Remove</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
         <div class="modal-action">
-          <button @click="showMembersModal = false" class="btn">Close</button>
+          <button @click="showMembers = false" class="btn">Close</button>
         </div>
       </div>
-      <form method="dialog" class="modal-backdrop" @click="showMembersModal = false"><button>close</button></form>
+      <form method="dialog" class="modal-backdrop" @click="showMembers = false"><button>close</button></form>
     </dialog>
   </div>
 </template>
@@ -146,22 +109,22 @@ import { apiClient } from '../../api/client'
 
 const companies = ref([])
 const allUsers = ref([])
+const members = ref([])
 const showModal = ref(false)
-const showMembersModal = ref(false)
+const showMembers = ref(false)
 const editing = ref(null)
-const membersCompany = ref(null)
-const currentMembers = ref([])
-const addMemberUserId = ref('')
+const selectedCompany = ref(null)
 const form = ref({ name: '' })
+const newMember = ref({ user_id: '', role: 'client' })
 
 const availableUsers = computed(() => {
-  const memberIds = currentMembers.value.map(m => m.id)
-  return allUsers.value.filter(u => !memberIds.includes(u.id))
+  const memberIds = new Set(members.value.map(m => m.user_id))
+  return allUsers.value.filter(u => !memberIds.has(u.id))
 })
 
-const openModal = (h = null) => {
-  editing.value = h
-  form.value = h ? { name: h.name } : { name: '' }
+const openModal = (company = null) => {
+  editing.value = company
+  form.value = company ? { name: company.name } : { name: '' }
   showModal.value = true
 }
 
@@ -175,33 +138,36 @@ const saveCompany = async () => {
   await fetchCompanies()
 }
 
-const deleteCompany = async (h) => {
-  if (confirm(`Delete company "${h.name}"? This cannot be undone.`)) {
-    await apiClient.delete(`/api/v1/admin/companies/${h.id}`)
-    await fetchCompanies()
-  }
+const deleteCompany = async (company) => {
+  if (!confirm(`Delete "${company.name}" and all its data?`)) return
+  await apiClient.delete(`/api/v1/admin/companies/${company.id}`)
+  await fetchCompanies()
 }
 
-const manageMembers = async (h) => {
-  membersCompany.value = h
-  currentMembers.value = await apiClient.get(`/api/v1/admin/companies/${h.id}/members`) || []
-  showMembersModal.value = true
+const manageMembers = async (company) => {
+  selectedCompany.value = company
+  members.value = await apiClient.get(`/api/v1/admin/companies/${company.id}/members`) || []
+  showMembers.value = true
 }
 
 const addMember = async () => {
-  if (!addMemberUserId.value) return
-  await apiClient.post(`/api/v1/admin/companies/${membersCompany.value.id}/members`, { user_id: addMemberUserId.value })
-  currentMembers.value = await apiClient.get(`/api/v1/admin/companies/${membersCompany.value.id}/members`) || []
-  addMemberUserId.value = ''
+  if (!newMember.value.user_id) return
+  await apiClient.post(`/api/v1/admin/companies/${selectedCompany.value.id}/members`, { 
+    user_id: newMember.value.user_id, role: newMember.value.role 
+  })
+  newMember.value = { user_id: '', role: 'client' }
+  members.value = await apiClient.get(`/api/v1/admin/companies/${selectedCompany.value.id}/members`) || []
 }
 
-const removeMember = async (m) => {
-  await apiClient.delete(`/api/v1/admin/companies/${membersCompany.value.id}/members/${m.id}`)
-  currentMembers.value = await apiClient.get(`/api/v1/admin/companies/${membersCompany.value.id}/members`) || []
+const updateMemberRole = async (member, role) => {
+  await apiClient.put(`/api/v1/admin/companies/${selectedCompany.value.id}/members/${member.user_id}`, { role })
+  members.value = await apiClient.get(`/api/v1/admin/companies/${selectedCompany.value.id}/members`) || []
 }
 
-const updateMemberRole = async (m, role) => {
-  await apiClient.put(`/api/v1/admin/companies/${membersCompany.value.id}/members/${m.id}`, { role })
+const removeMember = async (member) => {
+  if (!confirm(`Remove ${member.first_name} from ${selectedCompany.value.name}?`)) return
+  await apiClient.delete(`/api/v1/admin/companies/${selectedCompany.value.id}/members/${member.user_id}`)
+  members.value = await apiClient.get(`/api/v1/admin/companies/${selectedCompany.value.id}/members`) || []
 }
 
 const fetchCompanies = async () => {

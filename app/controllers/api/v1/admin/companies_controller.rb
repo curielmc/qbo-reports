@@ -2,43 +2,40 @@ module Api
   module V1
     module Admin
       class CompaniesController < AdminController
-        # GET /api/v1/admin/companies
         def index
           companies = Company.all.order(:name)
-          render json: companies.map { |h|
+          render json: companies.map { |c|
             {
-              id: h.id,
-              name: h.name,
-              users_count: h.users.count,
-              accounts_count: h.accounts.count,
-              transactions_count: h.respond_to?(:transactions) ? h.transactions.count : 0,
-              users: h.users.map { |u| { id: u.id, first_name: u.first_name, last_name: u.last_name, role: u.role } },
-              created_at: h.created_at
+              id: c.id,
+              name: c.name,
+              members_count: c.users.count,
+              accounts_count: c.accounts.count,
+              transactions_count: c.transactions.count,
+              created_at: c.created_at
             }
           }
         end
 
-        # POST /api/v1/admin/companies
         def create
           company = Company.new(company_params)
           if company.save
-            render json: company, status: :created
+            # Add creator as member
+            company.company_users.create!(user: current_user, role: current_user.role)
+            render json: { id: company.id, message: 'Company created' }, status: :created
           else
             render json: { errors: company.errors.full_messages }, status: :unprocessable_entity
           end
         end
 
-        # PUT /api/v1/admin/companies/:id
         def update
           company = Company.find(params[:id])
           if company.update(company_params)
-            render json: company
+            render json: { message: 'Company updated' }
           else
             render json: { errors: company.errors.full_messages }, status: :unprocessable_entity
           end
         end
 
-        # DELETE /api/v1/admin/companies/:id
         def destroy
           company = Company.find(params[:id])
           company.destroy
@@ -48,41 +45,40 @@ module Api
         # GET /api/v1/admin/companies/:id/members
         def members
           company = Company.find(params[:id])
-          members = company.company_users.includes(:user).map do |hu|
-            user = hu.user
+          render json: company.company_users.includes(:user).map { |cu|
             {
-              id: user.id,
-              first_name: user.first_name,
-              last_name: user.last_name,
-              email: user.email,
-              company_role: hu.role
+              user_id: cu.user_id,
+              first_name: cu.user.first_name,
+              last_name: cu.user.last_name,
+              email: cu.user.email,
+              role: cu.role
             }
-          end
-          render json: members
+          }
         end
 
         # POST /api/v1/admin/companies/:id/members
         def add_member
           company = Company.find(params[:id])
-          hu = company.company_users.build(user_id: params[:user_id], role: params[:role] || 'client')
-          if hu.save
+          cu = company.company_users.build(user_id: params[:user_id], role: params[:role] || 'client')
+          if cu.save
             render json: { message: 'Member added' }, status: :created
           else
-            render json: { errors: hu.errors.full_messages }, status: :unprocessable_entity
+            render json: { errors: cu.errors.full_messages }, status: :unprocessable_entity
           end
         end
 
         # PUT /api/v1/admin/companies/:id/members/:user_id
         def update_member
-          hu = CompanyUser.find_by!(company_id: params[:id], user_id: params[:user_id])
-          hu.update!(role: params[:role])
+          company = Company.find(params[:id])
+          cu = company.company_users.find_by!(user_id: params[:user_id])
+          cu.update!(role: params[:role])
           render json: { message: 'Member updated' }
         end
 
         # DELETE /api/v1/admin/companies/:id/members/:user_id
         def remove_member
-          hu = CompanyUser.find_by!(company_id: params[:id], user_id: params[:user_id])
-          hu.destroy
+          company = Company.find(params[:id])
+          company.company_users.find_by!(user_id: params[:user_id]).destroy
           render json: { message: 'Member removed' }
         end
 
