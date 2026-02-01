@@ -1,36 +1,22 @@
-databases:
-  - name: ecfobooks-db
-    plan: free
-    databaseName: ecfobooks_production
-    user: ecfobooks
-
 services:
   - type: web
-    plan: free
     name: ecfobooks
     runtime: ruby
+    plan: starter
+    repo: https://github.com/curielmc/qbo-reports
+    branch: master
     buildCommand: |
+      gem install bundler
+      bundle config set --local without 'development test'
       bundle install
-      yarn install
       bundle exec rake assets:precompile
-      bundle exec rake db:migrate
     startCommand: bundle exec puma -C config/puma.rb
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: ecfobooks-db
-          property: connectionString
+        value: postgresql://ecfobooks:mmVulK0rYKmqeSn3EEA953F4VMeiHHRC@dpg-d5vsdpd6ubrc73cqrsm0-a.oregon-postgres.render.com/ecfobooks_production
+      - key: RAILS_MASTER_KEY
+        value: 27df8db82cab9b206e5fe2ced05d4ad3
       - key: RAILS_ENV
         value: production
-      - key: RAILS_MASTER_KEY
-        sync: false
-      - key: SECRET_KEY_BASE
-        generateValue: true
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: PLAID_CLIENT_ID
-        sync: false
-      - key: PLAID_SECRET
-        sync: false
-      - key: PLAID_ENV
-        value: sandbox
+      - key: RAILS_LOG_TO_STDOUT
+        value: "true"
