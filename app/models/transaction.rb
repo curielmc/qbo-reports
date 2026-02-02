@@ -1,6 +1,7 @@
 class Transaction < ApplicationRecord
   belongs_to :account
   belongs_to :chart_of_account, optional: true
+  belongs_to :reconciliation, optional: true
   has_one :company, through: :account
   has_one :journal_entry, dependent: :destroy
 
