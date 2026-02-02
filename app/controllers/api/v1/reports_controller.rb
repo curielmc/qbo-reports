@@ -233,6 +233,25 @@ module Api
         }
       end
 
+      # POST /api/v1/companies/:company_id/reports/nl_query
+      # Natural language report queries
+      def nl_query
+        question = params[:question]
+        return render(json: { error: 'Question is required' }, status: :unprocessable_entity) unless question.present?
+
+        query_service = NlReportQuery.new(@company)
+        result = query_service.query(question)
+        render json: result
+      end
+
+      # GET /api/v1/companies/:company_id/reports/month_end_checklist
+      def month_end_checklist
+        period = params[:period] ? Date.parse(params[:period]) : 1.month.ago
+        analyzer = MonthEndAnalyzer.new(@company)
+        result = analyzer.analyze(period)
+        render json: result
+      end
+
       # GET /api/v1/companies/:company_id/reports/tax_form
       def tax_form
         form_type = params[:form_type]

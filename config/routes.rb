@@ -193,6 +193,8 @@ Rails.application.routes.draw do
         get 'reports/trial_balance', to: 'reports#trial_balance'
         get 'reports/account_transactions', to: 'reports#account_transactions'
         get 'reports/tax_form', to: 'reports#tax_form'
+        post 'reports/nl_query', to: 'reports#nl_query'
+        get 'reports/month_end_checklist', to: 'reports#month_end_checklist'
 
         # Exports
         get 'exports/transactions', to: 'exports#transactions_csv'
