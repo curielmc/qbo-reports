@@ -42,6 +42,15 @@ module Api
         end
       end
 
+      # POST /api/v1/companies/:company_id/chart_of_accounts/suggest
+      def suggest
+        description = params[:description]
+        return render json: { error: 'Description required' }, status: :unprocessable_entity if description.blank?
+
+        suggestions = CoaSuggester.new(@company).suggest(description)
+        render json: { suggestions: suggestions }
+      end
+
       private
 
       def set_company

@@ -89,11 +89,16 @@ Rails.application.routes.draw do
             post :categorize
           end
         end
-        resources :chart_of_accounts, only: [:index, :create, :update, :destroy]
+        resources :chart_of_accounts, only: [:index, :create, :update, :destroy] do
+          collection do
+            post :suggest
+          end
+        end
         resources :categorization_rules, only: [:index, :create, :update, :destroy] do
           collection do
             post :run
             get :suggestions
+            post :ai_suggestions
           end
         end
         
@@ -186,6 +191,8 @@ Rails.application.routes.draw do
         get 'reports/balance_sheet', to: 'reports#balance_sheet'
         get 'reports/general_ledger', to: 'reports#general_ledger'
         get 'reports/trial_balance', to: 'reports#trial_balance'
+        get 'reports/account_transactions', to: 'reports#account_transactions'
+        get 'reports/tax_form', to: 'reports#tax_form'
 
         # Exports
         get 'exports/transactions', to: 'exports#transactions_csv'

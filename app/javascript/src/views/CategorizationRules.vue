@@ -6,11 +6,15 @@
         <p class="text-base-content/60 mt-1">Auto-categorize transactions based on patterns</p>
       </div>
       <div class="flex gap-2">
-        <button @click="runRules" class="btn btn-secondary gap-2" :disabled="running">
+        <button @click="fetchAiSuggestions" class="btn btn-outline btn-secondary btn-sm gap-1" :disabled="aiLoading">
+          <span v-if="aiLoading" class="loading loading-spinner loading-sm"></span>
+          🤖 AI Suggest
+        </button>
+        <button @click="runRules" class="btn btn-secondary btn-sm gap-1" :disabled="running">
           <span v-if="running" class="loading loading-spinner loading-sm"></span>
           ⚡ Run Rules
         </button>
-        <button @click="openModal()" class="btn btn-primary gap-2">+ New Rule</button>
+        <button @click="openModal()" class="btn btn-primary btn-sm gap-1">+ New Rule</button>
       </div>
     </div>
 
@@ -28,6 +32,31 @@
               <span class="text-xs text-base-content/40 ml-2">({{ s.occurrences }} matches, {{ s.confidence }}% confidence)</span>
             </div>
             <button @click="acceptSuggestion(s)" class="btn btn-success btn-sm">Accept</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Suggestions -->
+    <div v-if="aiSuggestions.length > 0" class="card bg-base-100 shadow-xl mb-6 border border-secondary/30">
+      <div class="card-body">
+        <h2 class="card-title">🤖 AI-Suggested Rules</h2>
+        <p class="text-sm text-base-content/60 mb-4">AI analyzed your uncategorized transactions and found these patterns</p>
+        <div class="space-y-2">
+          <div v-for="s in aiSuggestions" :key="s.match_value + s.match_field" class="flex items-center justify-between bg-base-200 rounded-lg p-3">
+            <div class="flex-1">
+              <span class="badge badge-xs badge-outline mr-1">{{ s.match_field }}</span>
+              <span class="badge badge-xs badge-outline mr-2">{{ s.match_type }}</span>
+              <span class="font-medium font-mono">{{ s.match_value }}</span>
+              <span class="text-base-content/60"> → </span>
+              <span class="badge badge-sm badge-primary">{{ s.chart_of_account_name }}</span>
+              <div class="text-xs text-base-content/40 mt-1">
+                {{ s.reason }}
+                <span v-if="s.estimated_matches"> &middot; ~{{ s.estimated_matches }} matches</span>
+                <span v-if="s.confidence"> &middot; {{ s.confidence }}% confidence</span>
+              </div>
+            </div>
+            <button @click="acceptAiSuggestion(s)" class="btn btn-success btn-sm ml-3">Accept</button>
           </div>
         </div>
       </div>
@@ -210,6 +239,37 @@ const fetchRules = async () => {
 
 const fetchSuggestions = async () => {
   suggestions.value = await apiClient.get(`/api/v1/companies/${companyId()}/categorization_rules/suggestions`) || []
+}
+
+// AI-powered suggestions
+const aiSuggestions = ref([])
+const aiLoading = ref(false)
+
+const fetchAiSuggestions = async () => {
+  aiLoading.value = true
+  try {
+    const data = await apiClient.post(`/api/v1/companies/${companyId()}/categorization_rules/ai_suggestions`)
+    aiSuggestions.value = data?.suggestions || []
+  } catch (e) {
+    aiSuggestions.value = []
+  } finally {
+    aiLoading.value = false
+  }
+}
+
+const acceptAiSuggestion = async (s) => {
+  await apiClient.post(`/api/v1/companies/${companyId()}/categorization_rules`, {
+    categorization_rule: {
+      match_field: s.match_field,
+      match_type: s.match_type,
+      match_value: s.match_value.toLowerCase(),
+      chart_of_account_id: s.chart_of_account_id,
+      priority: 0
+    }
+  })
+  showToast('Rule created from AI suggestion')
+  aiSuggestions.value = aiSuggestions.value.filter(x => x.match_value !== s.match_value || x.match_field !== s.match_field)
+  await fetchRules()
 }
 
 onMounted(async () => {

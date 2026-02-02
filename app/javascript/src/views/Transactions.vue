@@ -116,14 +116,13 @@
                 </td>
                 <td class="text-sm text-base-content/60 whitespace-nowrap">{{ txn.account_name }}</td>
                 <td>
-                  <!-- Inline category selector -->
-                  <select v-if="!txn.categorized" 
+                  <select
+                    :value="txn.chart_of_account_id || ''"
                     @change="categorizeOne(txn.id, $event.target.value)"
-                    class="select select-bordered select-xs w-40 bg-warning/10">
-                    <option value="">⚠️ Uncategorized</option>
+                    :class="['select select-bordered select-xs w-40', txn.categorized ? '' : 'bg-warning/10']">
+                    <option value="">{{ txn.categorized ? '— Remove category —' : '⚠️ Uncategorized' }}</option>
                     <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
                   </select>
-                  <span v-else class="badge badge-sm badge-outline">{{ txn.chart_of_account_name }}</span>
                 </td>
                 <td :class="['text-right font-mono whitespace-nowrap', txn.amount >= 0 ? 'text-success' : 'text-error']">
                   {{ formatCurrency(txn.amount) }}
@@ -286,10 +285,9 @@ const goPage = (p) => {
 }
 
 const categorizeOne = async (txnId, chartOfAccountId) => {
-  if (!chartOfAccountId) return
   const cid = companyId()
   await apiClient.put(`/api/v1/companies/${cid}/transactions/${txnId}`, {
-    transaction: { chart_of_account_id: chartOfAccountId }
+    transaction: { chart_of_account_id: chartOfAccountId || null }
   })
   await fetchData(pagination.value.page)
 }

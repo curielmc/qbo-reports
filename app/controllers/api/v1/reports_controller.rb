@@ -60,40 +60,38 @@ module Api
           .where(journal_entries: { company_id: @company.id, posted: true })
           .where('journal_entries.entry_date <= ?', as_of)
 
-        # Assets = debits - credits (normal debit balance)
-        assets = {}
-        @company.chart_of_accounts.where(account_type: 'asset').active.each do |coa|
-          coa_lines = lines.where(chart_of_account: coa)
-          balance = coa_lines.sum(:debit) - coa_lines.sum(:credit)
-          assets[coa.name] = balance.round(2) if balance.abs > 0.01
-        end
+        build_section = ->(account_type, normal_balance) {
+          items = []
+          @company.chart_of_accounts.where(account_type: account_type).active.each do |coa|
+            coa_lines = lines.where(chart_of_account: coa)
+            balance = if normal_balance == :debit
+              coa_lines.sum(:debit) - coa_lines.sum(:credit)
+            else
+              coa_lines.sum(:credit) - coa_lines.sum(:debit)
+            end
+            items << { id: coa.id, name: coa.name, balance: balance.round(2) } if balance.abs > 0.01
+          end
+          items
+        }
 
-        # Liabilities = credits - debits (normal credit balance)
-        liabilities = {}
-        @company.chart_of_accounts.where(account_type: 'liability').active.each do |coa|
-          coa_lines = lines.where(chart_of_account: coa)
-          balance = coa_lines.sum(:credit) - coa_lines.sum(:debit)
-          liabilities[coa.name] = balance.round(2) if balance.abs > 0.01
-        end
+        assets = build_section.call('asset', :debit)
+        liabilities = build_section.call('liability', :credit)
+        equity = build_section.call('equity', :credit)
 
-        # Equity = credits - debits (normal credit balance)
-        equity = {}
-        @company.chart_of_accounts.where(account_type: 'equity').active.each do |coa|
-          coa_lines = lines.where(chart_of_account: coa)
-          balance = coa_lines.sum(:credit) - coa_lines.sum(:debit)
-          equity[coa.name] = balance.round(2) if balance.abs > 0.01
-        end
-
-        total_assets = assets.values.sum
-        total_liabilities = liabilities.values.sum
-        total_equity = equity.values.sum
+        total_assets = assets.sum { |a| a[:balance] }
+        total_liabilities = liabilities.sum { |a| a[:balance] }
+        total_equity = equity.sum { |a| a[:balance] }
 
         # Retained earnings = Assets - Liabilities - Equity (auto-balancing)
         retained = (total_assets - total_liabilities - total_equity).round(2)
-        equity['Retained Earnings'] = retained if retained.abs > 0.01
+        equity << { id: nil, name: 'Retained Earnings', balance: retained } if retained.abs > 0.01
 
         ai_summary = begin
-          ReportSummarizer.new(@company).summarize_balance_sheet(assets, liabilities, equity)
+          ReportSummarizer.new(@company).summarize_balance_sheet(
+            assets.map { |a| [a[:name], a[:balance]] }.to_h,
+            liabilities.map { |a| [a[:name], a[:balance]] }.to_h,
+            equity.map { |a| [a[:name], a[:balance]] }.to_h
+          )
         rescue => e
           nil
         end
@@ -108,6 +106,56 @@ module Api
           total_equity: total_equity + retained,
           balanced: (total_assets - total_liabilities - total_equity - retained).abs < 0.01,
           ai_summary: ai_summary
+        }
+      end
+
+      # GET /api/v1/companies/:company_id/reports/account_transactions
+      # Drill-down: returns journal entries affecting a specific account
+      def account_transactions
+        coa = @company.chart_of_accounts.find(params[:chart_of_account_id])
+        as_of = params[:as_of_date] || Date.current
+        start_date = params[:start_date]
+
+        entry_scope = coa.journal_lines
+          .joins(:journal_entry)
+          .where(journal_entries: { posted: true })
+          .where('journal_entries.entry_date <= ?', as_of)
+
+        entry_scope = entry_scope.where('journal_entries.entry_date >= ?', start_date) if start_date.present?
+
+        journal_lines = entry_scope
+          .includes(journal_entry: { journal_lines: :chart_of_account })
+          .order('journal_entries.entry_date ASC, journal_entries.id ASC')
+
+        normal_debit = %w[asset expense].include?(coa.account_type)
+        running_balance = 0
+
+        transactions = journal_lines.map do |jl|
+          je = jl.journal_entry
+          net = normal_debit ? (jl.debit - jl.credit) : (jl.credit - jl.debit)
+          running_balance += net
+
+          {
+            id: je.id,
+            date: je.entry_date,
+            memo: je.memo,
+            source: je.source,
+            debit: jl.debit,
+            credit: jl.credit,
+            net: net.round(2),
+            running_balance: running_balance.round(2),
+            other_accounts: je.journal_lines.reject { |l| l.id == jl.id }.map { |l|
+              l.chart_of_account.name
+            }
+          }
+        end
+
+        render json: {
+          account: { id: coa.id, name: coa.name, account_type: coa.account_type, code: coa.code },
+          as_of_date: as_of,
+          start_date: start_date,
+          ending_balance: running_balance.round(2),
+          transactions: transactions
         }
       end
 
@@ -183,6 +231,21 @@ module Api
           total_credits: total_credits.round(2),
           balanced: (total_debits - total_credits).abs < 0.01
         }
+      end
+
+      # GET /api/v1/companies/:company_id/reports/tax_form
+      def tax_form
+        form_type = params[:form_type]
+        tax_year = params[:tax_year] || Date.current.year - 1
+
+        generator = TaxFormGenerator.new(@company)
+
+        if form_type.blank?
+          render json: { supported_forms: generator.supported_forms }
+        else
+          result = generator.generate(form_type, tax_year)
+          render json: result
+        end
       end
 
       private
