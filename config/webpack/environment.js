@@ -29,4 +29,10 @@ environment.loaders.prepend('mjs', {
   type: 'javascript/auto'
 })
 
+// Force Vue to use ESM build so vue-router can import named exports
+environment.config.resolve.alias = {
+  ...environment.config.resolve.alias,
+  'vue': 'vue/dist/vue.esm-bundler.js'
+}
+
 module.exports = environment
