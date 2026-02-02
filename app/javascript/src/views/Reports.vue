@@ -1,11 +1,26 @@
 <template>
   <div>
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
       <h1 class="text-xl sm:text-3xl font-bold">Reports</h1>
-      <div class="flex items-center gap-3">
-        <input type="date" v-model="startDate" @change="refresh" class="input input-bordered input-sm" />
-        <span class="text-base-content/40">to</span>
-        <input type="date" v-model="endDate" @change="refresh" class="input input-bordered input-sm" />
+      <div class="flex flex-wrap items-center gap-2">
+        <select v-model="selectedPeriod" @change="applyPeriod" class="select select-bordered select-sm">
+          <option value="this_month">This Month</option>
+          <option value="last_month">Last Month</option>
+          <option value="this_quarter">This Quarter</option>
+          <option value="last_quarter">Last Quarter</option>
+          <option value="this_year">This Year</option>
+          <option value="last_year">Last Year</option>
+          <option value="year_to_date">Year to Date</option>
+          <option value="last_12_months">Last 12 Months</option>
+          <option value="all_time">All Time</option>
+          <option value="custom">Custom</option>
+        </select>
+        <template v-if="selectedPeriod === 'custom'">
+          <input type="date" v-model="startDate" @change="refresh" class="input input-bordered input-sm" />
+          <span class="text-base-content/40">to</span>
+          <input type="date" v-model="endDate" @change="refresh" class="input input-bordered input-sm" />
+        </template>
+        <span v-else class="text-sm text-base-content/60">{{ formatDateRange }}</span>
       </div>
     </div>
 
@@ -207,8 +222,56 @@ const tbReport = ref(null)
 const glReport = ref(null)
 
 const companyId = computed(() => appStore.activeCompany?.id || 1)
+const selectedPeriod = ref('this_year')
 const startDate = ref(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0])
 const endDate = ref(new Date().toISOString().split('T')[0])
+
+const toISO = (d) => d.toISOString().split('T')[0]
+
+const periodDates = (period) => {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = now.getMonth()
+  const q = Math.floor(m / 3)
+
+  switch (period) {
+    case 'this_month':
+      return [new Date(y, m, 1), new Date(y, m + 1, 0)]
+    case 'last_month':
+      return [new Date(y, m - 1, 1), new Date(y, m, 0)]
+    case 'this_quarter':
+      return [new Date(y, q * 3, 1), new Date(y, q * 3 + 3, 0)]
+    case 'last_quarter':
+      return [new Date(y, (q - 1) * 3, 1), new Date(y, q * 3, 0)]
+    case 'this_year':
+      return [new Date(y, 0, 1), new Date(y, 11, 31)]
+    case 'last_year':
+      return [new Date(y - 1, 0, 1), new Date(y - 1, 11, 31)]
+    case 'year_to_date':
+      return [new Date(y, 0, 1), now]
+    case 'last_12_months':
+      return [new Date(y - 1, m + 1, 1), now]
+    case 'all_time':
+      return [new Date(2000, 0, 1), now]
+    default:
+      return [new Date(y, 0, 1), now]
+  }
+}
+
+const applyPeriod = () => {
+  if (selectedPeriod.value === 'custom') return
+  const [s, e] = periodDates(selectedPeriod.value)
+  startDate.value = toISO(s)
+  endDate.value = toISO(e)
+  refresh()
+}
+
+const formatDateRange = computed(() => {
+  const opts = { month: 'short', day: 'numeric', year: 'numeric' }
+  const s = new Date(startDate.value + 'T00:00:00')
+  const e = new Date(endDate.value + 'T00:00:00')
+  return `${s.toLocaleDateString('en-US', opts)} – ${e.toLocaleDateString('en-US', opts)}`
+})
 
 const formatCurrency = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0)
 
