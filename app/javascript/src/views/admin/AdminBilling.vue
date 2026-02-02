@@ -77,7 +77,7 @@
     <!-- Edit Billing Modal -->
     <dialog :class="['modal', showModal ? 'modal-open' : '']">
       <div class="modal-box w-[95vw] sm:w-auto max-h-[90vh]">
-        <h3 class="font-bold text-lg mb-4">{{ editingCompany?.name }} — Billing Settings</h3>
+        <h3 class="font-bold text-lg mb-4">{{ (editingCompany && editingCompany.name) || '' }} — Billing Settings</h3>
         <form @submit.prevent="saveBilling">
           <div class="form-control mb-3">
             <label class="label"><span class="label-text">Engagement Type</span></label>

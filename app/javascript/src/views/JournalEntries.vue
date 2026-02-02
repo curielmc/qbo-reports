@@ -212,7 +212,7 @@
               <p class="font-medium text-sm">{{ tmpl.name }}</p>
               <p class="text-xs text-base-content/50">{{ tmpl.description }}</p>
               <p class="text-xs text-base-content/40 mt-1">
-                {{ tmpl.lines?.map(l => l.account_name || l.memo).join(' ↔ ') }}
+                {{ (tmpl.lines || []).map(l => l.account_name || l.memo).join(' ↔ ') }}
               </p>
             </div>
           </div>

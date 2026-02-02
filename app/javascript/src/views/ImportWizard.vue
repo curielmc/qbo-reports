@@ -48,8 +48,8 @@
       <div class="alert alert-info">
         <span class="text-lg">{{ sourceIcon }}</span>
         <div>
-          <p class="font-bold">Detected: {{ preview.source?.source?.replace(/_/g, ' ') }}</p>
-          <p class="text-sm">{{ preview.source?.confidence }}% confidence</p>
+          <p class="font-bold">Detected: {{ (preview.source && preview.source.source && preview.source.source.replace(/_/g, ' ')) || '' }}</p>
+          <p class="text-sm">{{ (preview.source && preview.source.confidence) || 0 }}% confidence</p>
         </div>
       </div>
 
@@ -57,26 +57,26 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="stat bg-base-100 rounded-box shadow p-4">
           <div class="stat-title text-xs">Transactions</div>
-          <div class="stat-value text-xl">{{ preview.summary?.transactions }}</div>
+          <div class="stat-value text-xl">{{ (preview.summary && preview.summary.transactions) || 0 }}</div>
         </div>
         <div class="stat bg-base-100 rounded-box shadow p-4">
           <div class="stat-title text-xs">Accounts</div>
-          <div class="stat-value text-xl">{{ preview.summary?.accounts }}</div>
+          <div class="stat-value text-xl">{{ (preview.summary && preview.summary.accounts) || 0 }}</div>
         </div>
         <div class="stat bg-base-100 rounded-box shadow p-4">
           <div class="stat-title text-xs">Categories</div>
-          <div class="stat-value text-xl">{{ preview.summary?.chart_of_accounts }}</div>
+          <div class="stat-value text-xl">{{ (preview.summary && preview.summary.chart_of_accounts) || 0 }}</div>
         </div>
         <div class="stat bg-base-100 rounded-box shadow p-4">
           <div class="stat-title text-xs">Date Range</div>
           <div class="stat-value text-sm">
-            {{ preview.summary?.date_range?.from }} → {{ preview.summary?.date_range?.to }}
+            {{ (preview.summary && preview.summary.date_range && preview.summary.date_range.from) || '' }} → {{ (preview.summary && preview.summary.date_range && preview.summary.date_range.to) || '' }}
           </div>
         </div>
       </div>
 
       <!-- Warnings -->
-      <div v-if="preview.warnings?.length" class="space-y-2">
+      <div v-if="(preview.warnings || []).length" class="space-y-2">
         <div v-for="(w, i) in preview.warnings" :key="i" class="alert alert-warning py-2">
           <span>⚠️ {{ w }}</span>
         </div>
@@ -104,7 +104,7 @@
       </div>
 
       <!-- New Categories -->
-      <div v-if="preview.suggested_new_categories?.length" class="card bg-base-100 shadow-xl">
+      <div v-if="(preview.suggested_new_categories || []).length" class="card bg-base-100 shadow-xl">
         <div class="card-body">
           <div class="flex justify-between items-center mb-4">
             <h2 class="card-title text-lg">🆕 New Categories to Create</h2>
@@ -160,7 +160,7 @@
           <button @click="step = 'select'" class="btn btn-outline">Cancel</button>
           <button @click="commitImport" class="btn btn-primary btn-lg" :disabled="committing">
             <span v-if="committing" class="loading loading-spinner loading-sm"></span>
-            ✅ Import {{ preview.summary?.transactions }} Transactions
+            ✅ Import {{ (preview.summary && preview.summary.transactions) || 0 }} Transactions
           </button>
         </div>
       </div>
@@ -173,16 +173,16 @@
       <div class="stats shadow mt-4">
         <div class="stat">
           <div class="stat-title">Imported</div>
-          <div class="stat-value text-success">{{ results?.results?.created?.transactions || 0 }}</div>
+          <div class="stat-value text-success">{{ (results && results.results && results.results.created && results.results.created.transactions) || 0 }}</div>
           <div class="stat-desc">transactions</div>
         </div>
         <div class="stat">
           <div class="stat-title">Duplicates Skipped</div>
-          <div class="stat-value">{{ results?.results?.skipped?.duplicates || 0 }}</div>
+          <div class="stat-value">{{ (results && results.results && results.results.skipped && results.results.skipped.duplicates) || 0 }}</div>
         </div>
         <div class="stat">
           <div class="stat-title">Auto-Categorized</div>
-          <div class="stat-value text-primary">{{ results?.auto_categorized || 0 }}</div>
+          <div class="stat-value text-primary">{{ (results && results.auto_categorized) || 0 }}</div>
         </div>
       </div>
       <div class="mt-8 flex gap-4 justify-center">

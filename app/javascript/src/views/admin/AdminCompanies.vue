@@ -52,7 +52,7 @@
     <!-- Members Modal -->
     <dialog :class="['modal', showMembers ? 'modal-open' : '']">
       <div class="modal-box max-w-2xl w-full sm:w-auto">
-        <h3 class="font-bold text-lg mb-4">{{ selectedCompany?.name }} — Members</h3>
+        <h3 class="font-bold text-lg mb-4">{{ (selectedCompany && selectedCompany.name) || '' }} — Members</h3>
         
         <!-- Add member -->
         <div class="flex gap-2 mb-4">

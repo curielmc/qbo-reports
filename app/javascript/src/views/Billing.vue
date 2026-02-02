@@ -33,7 +33,7 @@
             Monthly flat fee
           </p>
           <p v-else class="text-sm text-base-content/50 mt-1">
-            {{ usage.hours?.total_hours || 0 }} hrs × {{ formatCurrency(usage.hourly_rate) }}/hr
+            {{ (usage.hours && usage.hours.total_hours) || 0 }} hrs × {{ formatCurrency(usage.hourly_rate) }}/hr
           </p>
         </div>
       </div>
@@ -79,7 +79,7 @@
     </div>
 
     <!-- Time Entries (hourly engagements) -->
-    <div v-if="usage.engagement_type === 'hourly' && usage.hours?.entries?.length" class="card bg-base-100 shadow-xl mb-8">
+    <div v-if="usage.engagement_type === 'hourly' && usage.hours && (usage.hours.entries || []).length" class="card bg-base-100 shadow-xl mb-8">
       <div class="card-body">
         <div class="flex justify-between items-center mb-4">
           <h2 class="card-title text-lg">⏱️ Time Entries</h2>

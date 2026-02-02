@@ -66,7 +66,7 @@ puts "Created admin user: admin@ecfobooks.com / ecfobooks2026!"
 # Create demo company
 demo = Company.find_or_create_by!(name: 'Demo Company')
 CompanyUser.find_or_create_by!(user: admin, company: demo) do |cu|
-  cu.role = 'executive'
+  cu.role = 'owner'
 end
 
 # Create demo admin user

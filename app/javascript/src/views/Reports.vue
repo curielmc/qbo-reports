@@ -86,7 +86,7 @@
     <!-- Balance Sheet -->
     <div v-if="activeTab === 'bs'" class="space-y-6">
       <div class="flex justify-between">
-        <div v-if="bsReport?.balanced" class="badge badge-success gap-1">✓ Balanced</div>
+        <div v-if="bsReport && bsReport.balanced" class="badge badge-success gap-1">✓ Balanced</div>
         <div v-else class="badge badge-error gap-1">⚠ Unbalanced</div>
         <a :href="`/api/v1/companies/${companyId}/exports/balance_sheet?as_of_date=${endDate}`" 
           class="btn btn-outline btn-sm gap-1">📥 Export CSV</a>
@@ -116,7 +116,7 @@
     <!-- Trial Balance -->
     <div v-if="activeTab === 'tb'" class="space-y-6">
       <div class="flex justify-between items-center">
-        <div v-if="tbReport?.balanced" class="badge badge-success gap-1">✓ Balanced (Debits = Credits)</div>
+        <div v-if="tbReport && tbReport.balanced" class="badge badge-success gap-1">✓ Balanced (Debits = Credits)</div>
         <div v-else class="badge badge-error gap-1">⚠ Unbalanced</div>
       </div>
 
@@ -134,7 +134,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="acct in tbReport?.accounts" :key="acct.code" class="hover">
+                <tr v-for="acct in (tbReport && tbReport.accounts) || []" :key="acct.code" class="hover">
                   <td class="font-mono text-sm">{{ acct.code }}</td>
                   <td class="font-medium">{{ acct.name }}</td>
                   <td><span class="badge badge-xs badge-outline capitalize">{{ acct.account_type }}</span></td>
@@ -145,8 +145,8 @@
               <tfoot>
                 <tr class="font-bold border-t-2 bg-base-200">
                   <td colspan="3">Totals</td>
-                  <td class="text-right font-mono">{{ formatCurrency(tbReport?.total_debits) }}</td>
-                  <td class="text-right font-mono">{{ formatCurrency(tbReport?.total_credits) }}</td>
+                  <td class="text-right font-mono">{{ formatCurrency(tbReport && tbReport.total_debits) }}</td>
+                  <td class="text-right font-mono">{{ formatCurrency(tbReport && tbReport.total_credits) }}</td>
                 </tr>
               </tfoot>
             </table>
@@ -157,7 +157,7 @@
 
     <!-- General Ledger -->
     <div v-if="activeTab === 'gl'" class="space-y-4">
-      <div v-for="entry in glReport?.entries" :key="entry.id" class="card bg-base-100 shadow">
+      <div v-for="entry in (glReport && glReport.entries) || []" :key="entry.id" class="card bg-base-100 shadow">
         <div class="card-body py-4">
           <div class="flex justify-between items-center mb-2">
             <div>
@@ -185,7 +185,7 @@
         </div>
       </div>
 
-      <div v-if="!glReport?.entries?.length" class="text-center py-12 text-base-content/50">
+      <div v-if="!glReport || !(glReport.entries || []).length" class="text-center py-12 text-base-content/50">
         No journal entries for this period. Categorize some transactions to see double-entry records.
       </div>
     </div>

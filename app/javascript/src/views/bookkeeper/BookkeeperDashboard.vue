@@ -129,15 +129,15 @@
     <dialog :class="['modal', showMonthEnd ? 'modal-open' : '']">
       <div class="modal-box max-w-lg w-full sm:w-auto">
         <h3 class="font-bold text-lg mb-2">📅 Month-End Close</h3>
-        <p class="text-sm text-base-content/50 mb-4">{{ monthEndData?.period }}</p>
+        <p class="text-sm text-base-content/50 mb-4">{{ (monthEndData && monthEndData.period) || '' }}</p>
         
         <div class="mb-4">
-          <progress class="progress progress-primary w-full h-3" :value="monthEndData?.progress || 0" max="100"></progress>
-          <p class="text-sm text-right mt-1">{{ monthEndData?.progress || 0 }}%</p>
+          <progress class="progress progress-primary w-full h-3" :value="(monthEndData && monthEndData.progress) || 0" max="100"></progress>
+          <p class="text-sm text-right mt-1">{{ (monthEndData && monthEndData.progress) || 0 }}%</p>
         </div>
 
         <div class="space-y-2">
-          <label v-for="(item, key) in monthEndData?.checklist" :key="key"
+          <label v-for="(item, key) in (monthEndData && monthEndData.checklist) || {}" :key="key"
             class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200 cursor-pointer">
             <input type="checkbox" :checked="item.completed" @change="toggleCheckItem(key, item)"
               class="checkbox checkbox-sm checkbox-primary" />
@@ -149,7 +149,7 @@
 
         <div class="modal-action">
           <button @click="showMonthEnd = false" class="btn btn-ghost">Close</button>
-          <button v-if="monthEndData?.progress === 100" @click="closeMonth" class="btn btn-success">
+          <button v-if="monthEndData && monthEndData.progress === 100" @click="closeMonth" class="btn btn-success">
             🔒 Close Month
           </button>
         </div>

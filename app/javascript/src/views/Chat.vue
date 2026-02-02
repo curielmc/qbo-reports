@@ -53,7 +53,7 @@
           <div v-html="formatMessage(msg.content)"></div>
           
           <!-- Action buttons from AI suggestions -->
-          <div v-if="msg.suggestions?.length" class="mt-3 flex flex-wrap gap-2">
+          <div v-if="(msg.suggestions || []).length" class="mt-3 flex flex-wrap gap-2">
             <button v-for="s in msg.suggestions" :key="s.transaction_id"
               @click="applySuggestion(s)"
               class="btn btn-xs btn-outline gap-1">

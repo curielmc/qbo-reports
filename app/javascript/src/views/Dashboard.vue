@@ -9,7 +9,7 @@
           </svg>
         </div>
         <div class="stat-title">Net Worth</div>
-        <div class="stat-value text-primary text-lg sm:text-2xl">{{ formatCurrency(data.financials?.net_worth) }}</div>
+        <div class="stat-value text-primary text-lg sm:text-2xl">{{ formatCurrency(data.financials && data.financials.net_worth) }}</div>
         <div class="stat-desc">Assets minus liabilities</div>
       </div>
 
@@ -20,7 +20,7 @@
           </svg>
         </div>
         <div class="stat-title">YTD Income</div>
-        <div class="stat-value text-success text-lg sm:text-2xl">{{ formatCurrency(data.financials?.ytd_income) }}</div>
+        <div class="stat-value text-success text-lg sm:text-2xl">{{ formatCurrency(data.financials && data.financials.ytd_income) }}</div>
         <div class="stat-desc">Since Jan 1</div>
       </div>
 
@@ -31,7 +31,7 @@
           </svg>
         </div>
         <div class="stat-title">YTD Expenses</div>
-        <div class="stat-value text-error text-lg sm:text-2xl">{{ formatCurrency(data.financials?.ytd_expenses) }}</div>
+        <div class="stat-value text-error text-lg sm:text-2xl">{{ formatCurrency(data.financials && data.financials.ytd_expenses) }}</div>
         <div class="stat-desc">Since Jan 1</div>
       </div>
 
@@ -42,7 +42,7 @@
           </svg>
         </div>
         <div class="stat-title">Uncategorized</div>
-        <div class="stat-value text-warning text-2xl">{{ data.stats?.uncategorized || 0 }}</div>
+        <div class="stat-value text-warning text-2xl">{{ (data.stats && data.stats.uncategorized) || 0 }}</div>
         <div class="stat-desc">Transactions need review</div>
       </div>
     </div>
@@ -54,18 +54,18 @@
         <div class="card-body">
           <h2 class="card-title">Net Income (YTD)</h2>
           <div class="flex items-center gap-4 mt-4">
-            <div :class="['text-4xl font-bold', (data.financials?.net_income || 0) >= 0 ? 'text-success' : 'text-error']">
-              {{ formatCurrency(data.financials?.net_income) }}
+            <div :class="['text-4xl font-bold', ((data.financials && data.financials.net_income) || 0) >= 0 ? 'text-success' : 'text-error']">
+              {{ formatCurrency(data.financials && data.financials.net_income) }}
             </div>
           </div>
           <div class="mt-4 space-y-2">
             <div class="flex justify-between">
               <span class="text-base-content/60">Income</span>
-              <span class="font-mono text-success">{{ formatCurrency(data.financials?.ytd_income) }}</span>
+              <span class="font-mono text-success">{{ formatCurrency(data.financials && data.financials.ytd_income) }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-base-content/60">Expenses</span>
-              <span class="font-mono text-error">{{ formatCurrency(data.financials?.ytd_expenses) }}</span>
+              <span class="font-mono text-error">{{ formatCurrency(data.financials && data.financials.ytd_expenses) }}</span>
             </div>
             <progress 
               class="progress progress-success w-full" 
@@ -99,7 +99,7 @@
     </div>
 
     <!-- AI Alerts -->
-    <div v-if="data.alerts?.length" class="mb-8">
+    <div v-if="(data.alerts || []).length" class="mb-8">
       <div v-for="alert in data.alerts" :key="alert.message" 
         :class="['alert shadow-lg mb-2', alertClass(alert.severity)]">
         <span>{{ alertIcon(alert.type) }} {{ alert.message }}</span>
@@ -148,7 +148,7 @@
                   {{ formatCurrency(txn.amount) }}
                 </td>
               </tr>
-              <tr v-if="!data.recent_transactions?.length">
+              <tr v-if="!(data.recent_transactions || []).length">
                 <td colspan="5" class="text-center py-8 text-base-content/50">
                   No transactions yet. Link an account to get started.
                 </td>
