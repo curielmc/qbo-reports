@@ -91,14 +91,19 @@ module Api
       end
 
       # POST /api/v1/companies/:company_id/transactions/categorize
-      # Bulk categorize uncategorized transactions
+      # Bulk categorize or recategorize transactions
       def categorize
         ids = params[:transaction_ids] || []
         chart_of_account_id = params[:chart_of_account_id]
 
-        updated = @company.account_transactions
-          .where(id: ids)
-          .update_all(chart_of_account_id: chart_of_account_id)
+        transactions = @company.account_transactions.where(id: ids)
+        updated = 0
+
+        transactions.find_each do |txn|
+          if txn.update(chart_of_account_id: chart_of_account_id)
+            updated += 1
+          end
+        end
 
         render json: { message: "#{updated} transactions categorized" }
       end
