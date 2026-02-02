@@ -53,39 +53,25 @@ STANDARD_COA = [
   { code: '3200', name: 'Retained Earnings', account_type: 'equity' },
 ]
 
-# Create admin user
-admin = User.find_or_create_by!(email: 'admin@ecfobooks.com') do |u|
-  u.first_name = 'Admin'
-  u.last_name = 'User'
-  u.password = 'ecfobooks2026!'
-  u.role = :executive
-end
+# Dev login — always reset password so martin@myecfo.com / demo123 works after any db:seed
+martin = User.find_or_initialize_by(email: 'martin@myecfo.com')
+martin.assign_attributes(
+  first_name: 'Martin',
+  last_name: 'Curiel',
+  password: 'demo123',
+  role: 'executive'
+)
+martin.save!
+puts "Dev login ready: martin@myecfo.com / demo123 (executive)"
 
-puts "Created admin user: admin@ecfobooks.com / ecfobooks2026!"
-
-# Create demo company
-demo = Company.find_or_create_by!(name: 'Demo Company')
-CompanyUser.find_or_create_by!(user: admin, company: demo) do |cu|
-  cu.role = 'owner'
-end
-
-# Create demo admin user
-admin = User.find_or_create_by!(email: 'martin@myecfo.com') do |u|
-  u.first_name = 'Martin'
-  u.last_name = 'Curiel'
-  u.password = 'ecfobooks2026!'
-  u.role = 'executive'
-end
-
-# Create demo company
+# Demo company
 demo = Company.find_or_create_by!(name: 'Demo Company') do |c|
   c.engagement_type = 'flat_fee'
   c.monthly_fee = 500
   c.ai_credit_cents = 10000
 end
 
-# Link admin to company
-CompanyUser.find_or_create_by!(user: admin, company: demo) do |cu|
+CompanyUser.find_or_create_by!(user: martin, company: demo) do |cu|
   cu.role = 'owner'
 end
 
