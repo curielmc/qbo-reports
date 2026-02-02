@@ -20,7 +20,7 @@ module Api
           company = Company.new(company_params)
           if company.save
             # Add creator as member
-            company.company_users.create!(user: current_user, role: current_user.role)
+            company.company_users.create!(user: current_user, role: 'owner')
             render json: { id: company.id, message: 'Company created' }, status: :created
           else
             render json: { errors: company.errors.full_messages }, status: :unprocessable_entity
@@ -59,7 +59,7 @@ module Api
         # POST /api/v1/admin/companies/:id/members
         def add_member
           company = Company.find(params[:id])
-          cu = company.company_users.build(user_id: params[:user_id], role: params[:role] || 'client')
+          cu = company.company_users.build(user_id: params[:user_id], role: params[:role] || 'viewer')
           if cu.save
             render json: { message: 'Member added' }, status: :created
           else

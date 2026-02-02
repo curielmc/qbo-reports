@@ -61,9 +61,10 @@
             <option v-for="u in availableUsers" :key="u.id" :value="u.id">{{ u.first_name }} {{ u.last_name }} ({{ u.email }})</option>
           </select>
           <select v-model="newMember.role" class="select select-bordered select-sm">
+            <option value="owner">Owner</option>
+            <option value="bookkeeper">Bookkeeper</option>
+            <option value="editor">Editor</option>
             <option value="viewer">Viewer</option>
-            <option value="client">Client</option>
-            <option value="advisor">Advisor</option>
           </select>
           <button @click="addMember" class="btn btn-primary btn-sm" :disabled="!newMember.user_id">Add</button>
         </div>
@@ -82,9 +83,10 @@
               <td>{{ m.first_name }} {{ m.last_name }}</td>
               <td>
                 <select :value="m.role" @change="updateMemberRole(m, $event.target.value)" class="select select-bordered select-xs">
+                  <option value="owner">Owner</option>
+                  <option value="bookkeeper">Bookkeeper</option>
+                  <option value="editor">Editor</option>
                   <option value="viewer">Viewer</option>
-                  <option value="client">Client</option>
-                  <option value="advisor">Advisor</option>
                 </select>
               </td>
               <td class="text-right">
@@ -115,7 +117,7 @@ const showMembers = ref(false)
 const editing = ref(null)
 const selectedCompany = ref(null)
 const form = ref({ name: '' })
-const newMember = ref({ user_id: '', role: 'client' })
+const newMember = ref({ user_id: '', role: 'viewer' })
 
 const availableUsers = computed(() => {
   const memberIds = new Set(members.value.map(m => m.user_id))
@@ -155,7 +157,7 @@ const addMember = async () => {
   await apiClient.post(`/api/v1/admin/companies/${selectedCompany.value.id}/members`, { 
     user_id: newMember.value.user_id, role: newMember.value.role 
   })
-  newMember.value = { user_id: '', role: 'client' }
+  newMember.value = { user_id: '', role: 'viewer' }
   members.value = await apiClient.get(`/api/v1/admin/companies/${selectedCompany.value.id}/members`) || []
 }
 
