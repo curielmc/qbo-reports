@@ -7,7 +7,7 @@ class ApplicationController < ActionController::Base
     token = request.headers['Authorization']&.split(' ')&.last
     if token
       begin
-        payload = JWT.decode(token, Rails.application.credentials.secret_key_base)[0]
+        payload = JWT.decode(token, Rails.application.secret_key_base)[0]
         @current_user = User.find(payload['user_id'])
       rescue JWT::DecodeError, ActiveRecord::RecordNotFound
         render json: { error: 'Invalid or expired token' }, status: :unauthorized
