@@ -40,6 +40,7 @@ const routes = [
   { path: '/onboarding', name: 'Onboarding', component: Onboarding, meta: { requiresAuth: true } },
   
   // Admin routes (executive + manager)
+  { path: '/admin', redirect: '/admin/companies' },
   { path: '/admin/users', name: 'AdminUsers', component: AdminUsers, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/companies', name: 'AdminCompanies', component: AdminCompanies, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/accounts', name: 'AdminAccounts', component: AdminAccounts, meta: { requiresAuth: true, requiresAdmin: true } },
