@@ -147,7 +147,7 @@ const running = ref(false)
 const toast = ref(null)
 const form = ref({ match_field: 'description', match_type: 'contains', match_value: '', chart_of_account_id: '', priority: 0 })
 
-const companyId = () => appStore.currentCompany?.id || 1
+const companyId = () => appStore.activeCompany?.id || 1
 
 const showToast = (message, type = 'success') => {
   toast.value = { message, type }

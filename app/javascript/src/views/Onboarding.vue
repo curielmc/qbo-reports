@@ -214,7 +214,7 @@ const startImport = (src) => {
 }
 
 const finishSetup = async () => {
-  const cid = appStore.currentCompany?.id
+  const cid = appStore.activeCompany?.id
   if (cid) {
     const [accounts, coa] = await Promise.all([
       apiClient.get(`/api/v1/companies/${cid}/accounts`),

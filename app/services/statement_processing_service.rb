@@ -23,9 +23,12 @@ class StatementProcessingService
     import_result = run_import(parse_result, account)
     return partial_response unless import_result
 
-    # Step 4: Auto-reconcile
+    # Step 4: Opening balance (if first import for this account)
     effective_balance = statement_balance || parse_result[:statement_ending_balance]
     effective_date = statement_date || detect_statement_date(parse_result)
+    run_opening_balance(account, parse_result, effective_balance, effective_date)
+
+    # Step 5: Auto-reconcile
     run_reconcile(account, import_result[:upload], effective_balance, effective_date)
 
     build_response
@@ -154,6 +157,70 @@ class StatementProcessingService
     nil
   end
 
+  def run_opening_balance(account, parse_result, statement_balance, statement_date)
+    step = { status: 'in_progress' }
+    @steps[:opening_balance] = step
+
+    # Only create if no opening balance transaction exists for this account
+    existing_ob = account.account_transactions
+      .where(description: 'Opening Balance')
+      .exists?
+
+    if existing_ob
+      step[:status] = 'skipped'
+      step[:reason] = 'Opening balance already exists for this account'
+      return
+    end
+
+    unless statement_balance.present?
+      step[:status] = 'skipped'
+      step[:reason] = 'No statement balance to calculate opening balance from'
+      return
+    end
+
+    # Calculate beginning balance = ending balance - sum of all imported transactions
+    txn_total = account.account_transactions.sum(:amount)
+    beginning_balance = statement_balance.to_f - txn_total.to_f
+
+    if beginning_balance.abs < 0.01
+      step[:status] = 'skipped'
+      step[:reason] = 'No opening balance needed (beginning balance is zero)'
+      return
+    end
+
+    # Find or create Opening Balance Equity COA
+    equity_coa = @company.chart_of_accounts.find_or_create_by!(name: 'Opening Balance Equity') do |coa|
+      coa.code = '3050'
+      coa.account_type = 'equity'
+    end
+
+    # Opening date = day before statement period starts
+    opening_date = if statement_date.is_a?(Date)
+                     statement_date.beginning_of_month - 1.day
+                   else
+                     Date.current.beginning_of_month - 1.day
+                   end
+
+    # Create an opening balance transaction (this auto-creates a JE via sync_journal_entry)
+    txn = account.account_transactions.create!(
+      date: opening_date,
+      description: 'Opening Balance',
+      amount: beginning_balance,
+      merchant_name: 'Opening Balance',
+      pending: false,
+      chart_of_account: equity_coa
+    )
+
+    step[:status] = 'completed'
+    step[:transaction_id] = txn.id
+    step[:beginning_balance] = beginning_balance
+    step[:opening_date] = opening_date.to_s
+  rescue => e
+    step[:status] = 'failed'
+    step[:error] = e.message
+    @errors << "Opening balance: #{e.message}"
+  end
+
   def run_reconcile(account, upload, statement_balance, statement_date)
     step = { status: 'in_progress' }
     @steps[:reconciliation] = step
@@ -256,6 +323,11 @@ class StatementProcessingService
       details << "#{imp[:duplicates_skipped]} duplicates skipped" if imp[:duplicates_skipped].to_i > 0
       details << "#{imp[:transactions_categorized]} auto-categorized" if imp[:transactions_categorized].to_i > 0
       parts << details.join(', ')
+    end
+
+    if @steps[:opening_balance]&.dig(:status) == 'completed'
+      ob = @steps[:opening_balance]
+      parts << "opening balance of $#{'%.2f' % ob[:beginning_balance]} recorded"
     end
 
     if @steps[:reconciliation]&.dig(:status) == 'completed'

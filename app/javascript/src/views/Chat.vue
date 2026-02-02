@@ -136,7 +136,7 @@ const messagesContainer = ref(null)
 const inputRef = ref(null)
 const fileInput = ref(null)
 
-const companyId = () => appStore.currentCompany?.id || 1
+const companyId = () => appStore.activeCompany?.id || 1
 
 const quickPrompts = [
   { icon: '📋', text: 'Show uncategorized transactions' },

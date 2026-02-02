@@ -186,7 +186,7 @@ const pagination = ref({ page: 1, per_page: 50, total: 0, total_pages: 1 })
 const sortField = ref('date')
 const sortDir = ref('desc')
 
-const companyId = () => appStore.currentCompany?.id || 1
+const companyId = () => appStore.activeCompany?.id || 1
 
 const filters = ref({
   start_date: new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0],

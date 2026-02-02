@@ -103,7 +103,7 @@ const syncing = ref(null)
 const refreshing = ref(null)
 const toast = ref(null)
 
-const companyId = () => appStore.currentCompany?.id || 1
+const companyId = () => appStore.activeCompany?.id || 1
 
 const formatCurrency = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0)
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''

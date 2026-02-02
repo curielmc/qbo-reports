@@ -206,7 +206,7 @@ const bsReport = ref(null)
 const tbReport = ref(null)
 const glReport = ref(null)
 
-const companyId = computed(() => appStore.currentCompany?.id || 1)
+const companyId = computed(() => appStore.activeCompany?.id || 1)
 const startDate = ref(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0])
 const endDate = ref(new Date().toISOString().split('T')[0])
 

@@ -208,8 +208,8 @@ const usage = ref({})
 const history = ref([])
 const recentQueries = ref([])
 
-const companyId = computed(() => appStore.currentCompany?.id || 1)
-const companyName = computed(() => appStore.currentCompany?.name || 'Your Company')
+const companyId = computed(() => appStore.activeCompany?.id || 1)
+const companyName = computed(() => appStore.activeCompany?.name || 'Your Company')
 const cycleLabel = computed(() => {
   const now = new Date()
   return `${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`

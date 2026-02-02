@@ -106,7 +106,7 @@ const activeType = ref('all')
 const form = ref({ code: '', name: '', account_type: 'expense', active: true })
 
 const types = ['income', 'expense', 'asset', 'liability', 'equity']
-const companyId = computed(() => appStore.currentCompany?.id || 1)
+const companyId = computed(() => appStore.activeCompany?.id || 1)
 
 const countByType = (type) => accounts.value.filter(a => a.account_type === type).length
 const accountsByType = (type) => accounts.value.filter(a => a.account_type === type).sort((a, b) => (a.code || '').localeCompare(b.code || ''))
