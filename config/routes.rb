@@ -202,6 +202,7 @@ Rails.application.routes.draw do
   get '/onboarding', to: 'home#index'
   get '/chat', to: 'home#index'
   get '/login', to: 'home#index'
+  get '/admin', to: 'home#index'
   get '/admin/billing', to: 'home#index'
   get '/admin/*path', to: 'home#index'
   get '/invite/:token', to: 'home#index'
