@@ -58,7 +58,7 @@ module Api
           code: c.code,
           name: c.name,
           account_type: c.account_type,
-          parent_id: c.parent_id,
+          parent_code: c.parent_code,
           active: c.active,
           transactions_count: c.account_transactions.count,
           created_at: c.created_at

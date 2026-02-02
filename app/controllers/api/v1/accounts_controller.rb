@@ -52,7 +52,7 @@ module Api
         {
           id: a.id,
           name: a.name,
-          institution: a.institution,
+          official_name: a.official_name,
           account_type: a.account_type,
           mask: a.mask,
           current_balance: a.current_balance,

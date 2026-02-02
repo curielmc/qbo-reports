@@ -46,17 +46,23 @@
 
           <!-- Desktop top bar -->
           <div class="hidden lg:flex navbar bg-base-100 shadow-sm sticky top-0 z-30">
-            <div class="flex-1">
+            <div class="flex-1 flex items-center gap-4">
               <router-link to="/" class="btn btn-ghost text-xl gap-1">
                 <img src="./src/assets/logo.svg" alt="ecfoBooks" class="h-8" />
               </router-link>
+              <!-- Active company display -->
+              <div v-if="activeCompanyName" class="flex items-center gap-2">
+                <div class="w-px h-6 bg-base-300"></div>
+                <div class="flex items-center gap-2">
+                  <span class="text-2xl font-bold text-base-content">{{ activeCompanyName }}</span>
+                  <select v-if="companies.length > 1" v-model="currentCompanyId" @change="switchCompany"
+                    class="select select-ghost select-xs text-base-content/50 w-8 min-h-0 h-6 pl-0 pr-4 focus:outline-none">
+                    <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
+                  </select>
+                </div>
+              </div>
             </div>
             <div class="flex-none flex items-center gap-2">
-              <!-- Company switcher -->
-              <select v-if="companies.length > 0" v-model="currentCompanyId" @change="switchCompany"
-                class="select select-bordered select-sm max-w-xs">
-                <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-              </select>
               <button @click="showNotifications = !showNotifications" class="btn btn-ghost btn-circle btn-sm relative">
                 🔔
                 <span v-if="unreadCount > 0" class="badge badge-error badge-xs absolute -top-0.5 -right-0.5">{{ unreadCount }}</span>
@@ -211,6 +217,7 @@ const masqueradeName = computed(() => {
 
 const stopMasquerade = () => authStore.stopMasquerade()
 const companies = computed(() => appStore.companies || [])
+const activeCompanyName = computed(() => appStore.activeCompany?.name || '')
 
 const userName = computed(() => {
   const user = authStore.user
