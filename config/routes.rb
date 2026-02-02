@@ -186,6 +186,7 @@ Rails.application.routes.draw do
         get 'reports/balance_sheet', to: 'reports#balance_sheet'
         get 'reports/general_ledger', to: 'reports#general_ledger'
         get 'reports/trial_balance', to: 'reports#trial_balance'
+        get 'reports/account_transactions', to: 'reports#account_transactions'
 
         # Exports
         get 'exports/transactions', to: 'exports#transactions_csv'

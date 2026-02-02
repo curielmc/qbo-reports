@@ -112,9 +112,14 @@
           <h2 :class="['card-title', section.color]">{{ section.title }}</h2>
           <table class="table table-sm sm:table-md table-sm sm:table-md table-sm">
             <tbody>
-              <tr v-for="[name, amount] in section.items" :key="name">
-                <td>{{ name }}</td>
-                <td class="text-right font-mono">{{ formatCurrency(amount) }}</td>
+              <tr v-for="item in section.items" :key="item.name"
+                  :class="item.id ? 'cursor-pointer hover:bg-base-200 transition-colors' : ''"
+                  @click="item.id ? openDrilldown(item) : null">
+                <td>
+                  <span v-if="item.id" class="text-primary underline decoration-dotted underline-offset-4">{{ item.name }}</span>
+                  <span v-else>{{ item.name }}</span>
+                </td>
+                <td class="text-right font-mono">{{ formatCurrency(item.balance) }}</td>
               </tr>
             </tbody>
             <tfoot>
@@ -127,6 +132,58 @@
         </div>
       </div>
     </div>
+
+    <!-- Account Drilldown Modal -->
+    <dialog ref="drilldownModal" class="modal">
+      <div class="modal-box max-w-5xl w-11/12">
+        <form method="dialog">
+          <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">X</button>
+        </form>
+        <h3 class="font-bold text-lg mb-1" v-if="drilldownAccount">
+          {{ drilldownAccount.name }}
+        </h3>
+        <p class="text-sm text-base-content/60 mb-4" v-if="drilldownData">
+          {{ drilldownData.transactions.length }} transaction{{ drilldownData.transactions.length === 1 ? '' : 's' }}
+          <template v-if="drilldownData.start_date"> from {{ drilldownData.start_date }}</template>
+          through {{ drilldownData.as_of_date }}
+          &mdash; Ending Balance: <span class="font-mono font-semibold">{{ formatCurrency(drilldownData.ending_balance) }}</span>
+        </p>
+
+        <div v-if="drilldownLoading" class="flex justify-center py-12">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+
+        <div v-else-if="drilldownData && drilldownData.transactions.length" class="overflow-x-auto">
+          <table class="table table-sm table-pin-rows">
+            <thead>
+              <tr class="bg-base-200">
+                <th>Date</th>
+                <th>Memo</th>
+                <th>Account</th>
+                <th class="text-right">Debit</th>
+                <th class="text-right">Credit</th>
+                <th class="text-right">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(txn, idx) in drilldownData.transactions" :key="idx" class="hover">
+                <td class="font-mono text-sm whitespace-nowrap">{{ txn.date }}</td>
+                <td class="max-w-xs truncate">{{ txn.memo || '—' }}</td>
+                <td class="text-sm text-base-content/70 max-w-xs truncate">{{ txn.other_accounts.join(', ') || '—' }}</td>
+                <td class="text-right font-mono">{{ txn.debit > 0 ? formatCurrency(txn.debit) : '' }}</td>
+                <td class="text-right font-mono">{{ txn.credit > 0 ? formatCurrency(txn.credit) : '' }}</td>
+                <td class="text-right font-mono font-semibold">{{ formatCurrency(txn.running_balance) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div v-else class="text-center py-12 text-base-content/50">
+          No transactions found for this account in the selected period.
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button>close</button></form>
+    </dialog>
 
     <!-- Trial Balance -->
     <div v-if="activeTab === 'tb'" class="space-y-6">
@@ -290,11 +347,36 @@ const bsSections = computed(() => {
   if (!bsReport.value) return []
   const r = bsReport.value
   return [
-    { title: 'Assets', color: 'text-success', items: Object.entries(r.assets || {}), total: r.total_assets || 0 },
-    { title: 'Liabilities', color: 'text-error', items: Object.entries(r.liabilities || {}), total: r.total_liabilities || 0 },
-    { title: 'Equity', color: 'text-primary', items: Object.entries(r.equity || {}), total: r.total_equity || 0 }
+    { title: 'Assets', color: 'text-success', items: r.assets || [], total: r.total_assets || 0 },
+    { title: 'Liabilities', color: 'text-error', items: r.liabilities || [], total: r.total_liabilities || 0 },
+    { title: 'Equity', color: 'text-primary', items: r.equity || [], total: r.total_equity || 0 }
   ]
 })
+
+// Drilldown state
+const drilldownModal = ref(null)
+const drilldownAccount = ref(null)
+const drilldownData = ref(null)
+const drilldownLoading = ref(false)
+
+const openDrilldown = async (item) => {
+  drilldownAccount.value = item
+  drilldownData.value = null
+  drilldownLoading.value = true
+  drilldownModal.value?.showModal()
+
+  const cid = companyId.value
+  const params = new URLSearchParams({ chart_of_account_id: item.id, as_of_date: endDate.value })
+  if (startDate.value) params.set('start_date', startDate.value)
+
+  try {
+    drilldownData.value = await apiClient.get(`/api/v1/companies/${cid}/reports/account_transactions?${params}`)
+  } catch (e) {
+    drilldownData.value = { transactions: [], ending_balance: 0, as_of_date: endDate.value, start_date: startDate.value }
+  } finally {
+    drilldownLoading.value = false
+  }
+}
 
 const refresh = async () => {
   loading.value = true
