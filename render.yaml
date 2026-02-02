@@ -10,7 +10,9 @@ services:
       bundle lock --add-platform x86_64-linux
       bundle config set --local without 'development test'
       bundle install
-      bundle exec rake assets:precompile
+      echo "module.exports=()=>({postcssPlugin:'postcss-preset-env',Once(){}});module.exports.postcss=true;" > node_modules/postcss-preset-env/index.js
+      echo '{"name":"postcss-preset-env","version":"0.0.0","main":"index.js"}' > node_modules/postcss-preset-env/package.json
+      NODE_OPTIONS=--openssl-legacy-provider bundle exec rake assets:precompile
     preDeployCommand: bundle exec rake db:migrate
     startCommand: bundle exec puma -C config/puma.rb
     envVars:
