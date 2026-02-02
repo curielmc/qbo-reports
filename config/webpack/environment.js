@@ -22,11 +22,21 @@ environment.loaders.keys().forEach((key) => {
   })
 })
 
-// Fix: Webpack 4 can't handle named exports from .mjs ES modules (vue-router, etc.)
+// Fix: Webpack 4 can't handle .mjs ES modules — treat as JS and run through babel
 environment.loaders.prepend('mjs', {
   test: /\.mjs$/,
   include: /node_modules/,
-  type: 'javascript/auto'
+  type: 'javascript/auto',
+  use: [{
+    loader: 'babel-loader',
+    options: {
+      presets: [['@babel/preset-env', { targets: { esmodules: true }, modules: false }]],
+      plugins: [
+        '@babel/plugin-transform-optional-chaining',
+        '@babel/plugin-transform-nullish-coalescing-operator'
+      ]
+    }
+  }]
 })
 
 // Force Vue and related packages to use ESM builds for Webpack 4 compatibility

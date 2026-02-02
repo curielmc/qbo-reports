@@ -84,7 +84,7 @@
       <button @click="sendMessage('Show uncategorized transactions')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">📋 Uncategorized</button>
       <button @click="sendMessage('Suggest categories for my transactions')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">🤖 Categorize</button>
       <button @click="sendMessage('Run all categorization rules')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">⚡ Rules</button>
-      <button @click="sendMessage('What\\'s my P&L this year?')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">📈 P&L</button>
+      <button @click="sendMessage('Show my P&amp;L this year')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">📈 P&amp;L</button>
       <button @click="sendMessage('What adjustments do I need?')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">📒 Adjustments</button>
       <button @click="sendMessage('Any anomalies?')" class="btn btn-xs btn-ghost whitespace-nowrap flex-shrink-0">⚠️ Anomalies</button>
     </div>
