@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_02_01_000022) do
+ActiveRecord::Schema.define(version: 2026_02_01_000025) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -48,6 +48,25 @@ ActiveRecord::Schema.define(version: 2026_02_01_000022) do
     t.index ["company_id", "created_at"], name: "index_ai_queries_on_company_id_and_created_at"
     t.index ["company_id"], name: "index_ai_queries_on_company_id"
     t.index ["user_id"], name: "index_ai_queries_on_user_id"
+  end
+
+  create_table "api_keys", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "company_id", null: false
+    t.string "token_digest", null: false
+    t.string "prefix", limit: 8, null: false
+    t.string "name", null: false
+    t.string "permissions", default: [], array: true
+    t.boolean "active", default: true, null: false
+    t.datetime "expires_at"
+    t.datetime "last_used_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["company_id"], name: "index_api_keys_on_company_id"
+    t.index ["prefix"], name: "index_api_keys_on_prefix"
+    t.index ["token_digest"], name: "index_api_keys_on_token_digest", unique: true
+    t.index ["user_id", "company_id"], name: "index_api_keys_on_user_id_and_company_id"
+    t.index ["user_id"], name: "index_api_keys_on_user_id"
   end
 
   create_table "audit_logs", force: :cascade do |t|
@@ -310,9 +329,12 @@ ActiveRecord::Schema.define(version: 2026_02_01_000022) do
     t.text "notes"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "source", default: "manual", null: false
+    t.bigint "statement_upload_id"
     t.index ["account_id"], name: "index_reconciliations_on_account_id"
     t.index ["company_id", "account_id", "statement_date"], name: "idx_reconciliations_company_account_date"
     t.index ["company_id"], name: "index_reconciliations_on_company_id"
+    t.index ["statement_upload_id"], name: "index_reconciliations_on_statement_upload_id"
     t.index ["user_id"], name: "index_reconciliations_on_user_id"
   end
 
@@ -351,7 +373,11 @@ ActiveRecord::Schema.define(version: 2026_02_01_000022) do
     t.jsonb "raw_data", default: {}
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.string "source", default: "web", null: false
+    t.string "parser_engine"
+    t.bigint "api_key_id"
     t.index ["account_id"], name: "index_statement_uploads_on_account_id"
+    t.index ["api_key_id"], name: "index_statement_uploads_on_api_key_id"
     t.index ["company_id"], name: "index_statement_uploads_on_company_id"
     t.index ["user_id"], name: "index_statement_uploads_on_user_id"
   end
@@ -408,6 +434,8 @@ ActiveRecord::Schema.define(version: 2026_02_01_000022) do
   add_foreign_key "accounts", "plaid_items"
   add_foreign_key "ai_queries", "companies"
   add_foreign_key "ai_queries", "users"
+  add_foreign_key "api_keys", "companies"
+  add_foreign_key "api_keys", "users"
   add_foreign_key "audit_logs", "companies"
   add_foreign_key "audit_logs", "users"
   add_foreign_key "bookkeeper_tasks", "companies"
@@ -436,10 +464,12 @@ ActiveRecord::Schema.define(version: 2026_02_01_000022) do
   add_foreign_key "receipts", "users"
   add_foreign_key "reconciliations", "accounts"
   add_foreign_key "reconciliations", "companies"
+  add_foreign_key "reconciliations", "statement_uploads"
   add_foreign_key "reconciliations", "users"
   add_foreign_key "recurring_entries", "companies"
   add_foreign_key "recurring_entries", "users", column: "created_by_id"
   add_foreign_key "statement_uploads", "accounts"
+  add_foreign_key "statement_uploads", "api_keys"
   add_foreign_key "statement_uploads", "companies"
   add_foreign_key "statement_uploads", "users"
   add_foreign_key "transactions", "accounts"

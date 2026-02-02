@@ -36,6 +36,7 @@
                 <td class="text-sm">{{ user.companies_count || 0 }}</td>
                 <td class="text-sm text-base-content/50">{{ user.last_sign_in_at ? formatDate(user.last_sign_in_at) : 'Never' }}</td>
                 <td class="text-right">
+                  <button v-if="user.id !== currentUserId && authStore.isExecutive" @click="masquerade(user)" class="btn btn-ghost btn-xs text-warning">Masquerade</button>
                   <button @click="openModal(user)" class="btn btn-ghost btn-xs">Edit</button>
                   <button @click="deleteUser(user)" class="btn btn-ghost btn-xs text-error" v-if="user.id !== currentUserId">Delete</button>
                 </td>
@@ -128,6 +129,14 @@ const saveUser = async () => {
     }
     showModal.value = false
     await fetchUsers()
+  } catch (e) {
+    error.value = e.message
+  }
+}
+
+const masquerade = async (user) => {
+  try {
+    await authStore.startMasquerade(user.id)
   } catch (e) {
     error.value = e.message
   }

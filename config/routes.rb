@@ -28,6 +28,8 @@ Rails.application.routes.draw do
         get 'clockify/clients', to: 'clockify#clients'
         get 'clockify/summary', to: 'clockify#summary'
         post 'clockify/setup/:company_id', to: 'clockify#setup'
+        post 'masquerade/:user_id', to: 'masquerade#create'
+        delete 'masquerade', to: 'masquerade#destroy'
         resources :users, only: [:index, :create, :update, :destroy]
         resources :companies, only: [:index, :create, :update, :destroy] do
           member do
@@ -74,6 +76,9 @@ Rails.application.routes.draw do
       get 'invitations/:token', to: 'invitations#show'
       post 'invitations/:token/accept', to: 'invitations#accept'
 
+      # API Keys
+      resources :api_keys, only: [:index, :create, :destroy]
+
       # Dashboard
       get 'dashboard', to: 'dashboard#show'
 
@@ -119,6 +124,11 @@ Rails.application.routes.draw do
             get :preview
           end
         end
+
+        # Agent (AI-driven statement processing)
+        post 'agent/process_statement', to: 'agent#process_statement'
+        get 'agent/accounts', to: 'agent#accounts'
+        get 'agent/status', to: 'agent#status'
 
         # Reconciliation
         resources :reconciliations, only: [:index, :show, :create] do

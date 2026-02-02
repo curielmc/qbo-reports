@@ -2,6 +2,7 @@ class Reconciliation < ApplicationRecord
   belongs_to :company
   belongs_to :account
   belongs_to :user
+  belongs_to :statement_upload, optional: true
   has_many :account_transactions
 
   scope :in_progress, -> { where(status: 'in_progress') }

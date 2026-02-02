@@ -219,11 +219,226 @@ class StatementParser
   # ============================================
 
   def parse_pdf_with_ai(content, filename)
-    # Convert PDF to text (requires pdftotext or similar)
+    # Chain: Kimi K2.5 (default) → Claude (native PDF) → OpenAI+pdftotext (fallback)
+
+    # 1. Try Kimi K2.5 via OpenRouter
+    if openrouter_api_key.present?
+      result = parse_pdf_with_kimi(content, filename)
+      return result if result[:success]
+      Rails.logger.warn "StatementParser: Kimi PDF parsing failed, trying Claude"
+    end
+
+    # 2. Try Claude (native PDF reading, no pdftotext needed)
+    if anthropic_api_key.present?
+      result = parse_pdf_with_claude(content, filename)
+      return result if result[:success]
+      Rails.logger.warn "StatementParser: Claude PDF parsing failed, falling back to OpenAI+pdftotext"
+    end
+
+    # 3. Fallback: extract text with pdftotext, then use OpenAI
     text = extract_pdf_text(content)
-    return { success: false, error: 'Could not extract text from PDF' } if text.blank?
+    return { success: false, error: 'Could not extract text from PDF. Configure OPENROUTER_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY.' } if text.blank?
 
     ai_parse_statement(text, filename)
+  end
+
+  # Parse PDF with Kimi K2.5 via OpenRouter (uses pdftotext for text extraction)
+  def parse_pdf_with_kimi(content, filename)
+    text = extract_pdf_text(content)
+    return { success: false, error: 'Could not extract text from PDF for Kimi' } if text.blank?
+
+    # Truncate to fit in context
+    text = text[0..30000] if text.length > 30000
+
+    categories = @company.chart_of_accounts.active.pluck(:name, :account_type)
+      .map { |n, t| "#{n} (#{t})" }.join(', ')
+
+    prompt = <<~P
+      Parse this bank/credit card statement and extract ALL transactions.
+      For each transaction, suggest the best category from the available list.
+
+      Available categories: #{categories}
+
+      Statement content (#{filename}):
+      ```
+      #{text}
+      ```
+
+      Return a JSON object:
+      {
+        "account_name": "detected account name or null",
+        "account_type": "checking/savings/credit_card/etc",
+        "statement_period": "detected date range",
+        "statement_ending_balance": 12345.67,
+        "transactions": [
+          {
+            "date": "YYYY-MM-DD",
+            "description": "transaction description",
+            "amount": -123.45,
+            "merchant": "merchant name if identifiable",
+            "suggested_category": "best matching category name or null"
+          }
+        ],
+        "notes": "any parsing observations"
+      }
+
+      Rules:
+      - Negative amounts = money out (expenses, payments)
+      - Positive amounts = money in (deposits, refunds)
+      - Dates must be YYYY-MM-DD format
+      - Include ALL transactions, don't skip any
+      - statement_ending_balance is the ending/closing balance shown on the statement
+      - If you can't determine date format, note it
+      - Return ONLY valid JSON, no other text
+    P
+
+    uri = URI('https://openrouter.ai/api/v1/chat/completions')
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    http.read_timeout = 120
+
+    body = {
+      model: 'moonshotai/kimi-k2.5',
+      messages: [
+        { role: 'system', content: 'You are a financial document parser. Extract transactions accurately. Return ONLY valid JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.1,
+      max_tokens: 8000
+    }
+
+    request = Net::HTTP::Post.new(uri)
+    request['Authorization'] = "Bearer #{openrouter_api_key}"
+    request['Content-Type'] = 'application/json'
+    request['HTTP-Referer'] = 'https://myecfo.com'
+    request['X-Title'] = 'MYeCFO Statement Parser'
+    request.body = body.to_json
+
+    response = http.request(request)
+    response_body = JSON.parse(response.body)
+
+    raw_text = response_body.dig('choices', 0, 'message', 'content') || ''
+    # Extract JSON from response (model may wrap in markdown code blocks)
+    json_str = raw_text[/\{.*\}/m] || '{}'
+    result = JSON.parse(json_str)
+
+    transactions = result['transactions'] || []
+    {
+      success: true,
+      transactions: transactions,
+      account_name: result['account_name'],
+      account_type: result['account_type'],
+      statement_period: result['statement_period'],
+      statement_ending_balance: result['statement_ending_balance']&.to_f,
+      notes: result['notes'],
+      format: 'kimi_pdf',
+      count: transactions.size,
+      parser_engine: 'kimi'
+    }
+  rescue => e
+    Rails.logger.error "StatementParser Kimi PDF error: #{e.message}"
+    { success: false, error: "Kimi PDF parsing failed: #{e.message}" }
+  end
+
+  # Parse PDF natively with Claude API (no pdftotext needed)
+  def parse_pdf_with_claude(content, filename)
+    categories = @company.chart_of_accounts.active.pluck(:name, :account_type)
+      .map { |n, t| "#{n} (#{t})" }.join(', ')
+
+    pdf_base64 = Base64.strict_encode64(content)
+
+    prompt = <<~P
+      Parse this bank/credit card statement PDF and extract ALL transactions.
+      For each transaction, suggest the best category from the available list.
+
+      Available categories: #{categories}
+
+      Return a JSON object:
+      {
+        "account_name": "detected account name or null",
+        "account_type": "checking/savings/credit_card/etc",
+        "statement_period": "detected date range",
+        "statement_ending_balance": 12345.67,
+        "transactions": [
+          {
+            "date": "YYYY-MM-DD",
+            "description": "transaction description",
+            "amount": -123.45,
+            "merchant": "merchant name if identifiable",
+            "suggested_category": "best matching category name or null"
+          }
+        ],
+        "notes": "any parsing observations"
+      }
+
+      Rules:
+      - Negative amounts = money out (expenses, payments)
+      - Positive amounts = money in (deposits, refunds)
+      - Dates must be YYYY-MM-DD format
+      - Include ALL transactions, don't skip any
+      - statement_ending_balance is the ending/closing balance shown on the statement
+      - If you can't determine date format, note it
+    P
+
+    uri = URI('https://api.anthropic.com/v1/messages')
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    http.read_timeout = 120
+
+    body = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 8000,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: pdf_base64
+              }
+            },
+            {
+              type: 'text',
+              text: prompt
+            }
+          ]
+        }
+      ]
+    }
+
+    request = Net::HTTP::Post.new(uri)
+    request['x-api-key'] = anthropic_api_key
+    request['anthropic-version'] = '2023-06-01'
+    request['content-type'] = 'application/json'
+    request.body = body.to_json
+
+    response = http.request(request)
+    response_body = JSON.parse(response.body)
+
+    raw_text = response_body.dig('content', 0, 'text') || ''
+    # Extract JSON from response (Claude may wrap in markdown code blocks)
+    json_str = raw_text[/\{.*\}/m] || '{}'
+    result = JSON.parse(json_str)
+
+    transactions = result['transactions'] || []
+    {
+      success: true,
+      transactions: transactions,
+      account_name: result['account_name'],
+      account_type: result['account_type'],
+      statement_period: result['statement_period'],
+      statement_ending_balance: result['statement_ending_balance']&.to_f,
+      notes: result['notes'],
+      format: 'claude_pdf',
+      count: transactions.size,
+      parser_engine: 'claude'
+    }
+  rescue => e
+    Rails.logger.error "StatementParser Claude PDF error: #{e.message}"
+    { success: false, error: "Claude PDF parsing failed: #{e.message}" }
   end
 
   def extract_pdf_text(content)
@@ -239,6 +454,14 @@ class StatementParser
     text.presence
   rescue
     nil
+  end
+
+  def anthropic_api_key
+    Rails.application.credentials.dig(:anthropic, :api_key) || ENV['ANTHROPIC_API_KEY']
+  end
+
+  def openrouter_api_key
+    Rails.application.credentials.dig(:openrouter, :api_key) || ENV['OPENROUTER_API_KEY']
   end
 
   # ============================================

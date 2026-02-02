@@ -2,6 +2,7 @@ class StatementUpload < ApplicationRecord
   belongs_to :company
   belongs_to :account, optional: true
   belongs_to :user
+  belongs_to :api_key, optional: true
 
   validates :filename, presence: true
 

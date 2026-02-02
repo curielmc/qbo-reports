@@ -1,6 +1,12 @@
 <template>
   <div id="app" data-theme="ecfobooks">
-    <div v-if="isAuthenticated" class="min-h-screen bg-base-200">
+    <!-- Masquerade banner -->
+    <div v-if="isMasquerading" class="alert alert-warning rounded-none fixed top-0 left-0 right-0 z-50 flex justify-center py-2">
+      <span>Viewing as <strong>{{ masqueradeName }}</strong></span>
+      <button @click="stopMasquerade" class="btn btn-sm btn-ghost underline">Stop Masquerading</button>
+    </div>
+
+    <div v-if="isAuthenticated" class="min-h-screen bg-base-200" :class="{ 'pt-12': isMasquerading }">
       <!-- Mobile-first drawer layout -->
       <div class="drawer lg:drawer-open">
         <input id="main-drawer" type="checkbox" class="drawer-toggle" v-model="drawerOpen" />
@@ -197,6 +203,13 @@ const currentCompanyId = ref(null)
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const isBookkeeper = computed(() => authStore.user?.role === 'bookkeeper' || authStore.isAdmin)
+const isMasquerading = computed(() => authStore.isMasquerading)
+const masqueradeName = computed(() => {
+  const m = authStore.masqueradingAs
+  return m ? `${m.first_name || ''} ${m.last_name || ''}`.trim() : ''
+})
+
+const stopMasquerade = () => authStore.stopMasquerade()
 const companies = computed(() => appStore.companies || [])
 
 const userName = computed(() => {

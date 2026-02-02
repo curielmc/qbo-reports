@@ -51,11 +51,6 @@
           </button>
         </form>
 
-        <div class="divider">OR</div>
-        
-        <a href="/admin" class="btn btn-outline btn-sm w-full">
-          Admin Panel →
-        </a>
       </div>
     </div>
   </div>
@@ -81,7 +76,12 @@ const handleLogin = async () => {
   const result = await authStore.login(email.value, password.value)
   
   if (result.success) {
-    router.push('/')
+    const role = authStore.user?.role
+    if (role === 'executive' || role === 'manager') {
+      router.push('/admin/companies')
+    } else {
+      router.push('/')
+    }
   } else {
     error.value = result.error || 'Invalid email or password'
   }

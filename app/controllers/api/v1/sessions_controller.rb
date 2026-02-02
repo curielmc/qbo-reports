@@ -57,13 +57,13 @@ module Api
         }
       end
 
-      def generate_jwt(user)
+      def generate_jwt(user, extra_claims = {})
         payload = {
           user_id: user.id,
           email: user.email,
           role: user.role,
           exp: 24.hours.from_now.to_i
-        }
+        }.merge(extra_claims)
         JWT.encode(payload, Rails.application.secret_key_base)
       end
     end
