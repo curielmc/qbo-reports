@@ -7,15 +7,19 @@ environment.loaders.prepend('vue', {
   use: [{ loader: 'vue-loader' }]
 })
 
-// Fix postcss-loader v4 options format (Webpacker 5 passes old `config` key)
+// Override ALL postcss-loader instances: inject plugins inline, bypass config file entirely
+// This prevents Webpacker's bundled postcss-preset-env (which crashes with Tailwind 3)
 environment.loaders.keys().forEach((key) => {
   const loader = environment.loaders.get(key)
   if (!loader || !loader.use) return
   loader.use.forEach((rule) => {
-    if (rule.loader && rule.loader.includes('postcss-loader') && rule.options && rule.options.config) {
+    if (rule.loader && rule.loader.includes('postcss-loader')) {
       rule.options = {
         postcssOptions: {
-          config: rule.options.config.path
+          plugins: [
+            require('tailwindcss'),
+            require('autoprefixer')
+          ]
         }
       }
     }
