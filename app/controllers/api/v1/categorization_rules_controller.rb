@@ -46,10 +46,17 @@ module Api
       end
 
       # GET /api/v1/companies/:company_id/categorization_rules/suggestions
-      # AI-suggested rules based on existing categorizations
+      # Pattern-based rule suggestions from existing categorizations
       def suggestions
         suggestions = CategorizationRule.suggest_rules(@company)
         render json: suggestions
+      end
+
+      # POST /api/v1/companies/:company_id/categorization_rules/ai_suggestions
+      # AI-powered deep analysis of transaction patterns
+      def ai_suggestions
+        suggestions = CategorizationRule.ai_suggest_rules(@company)
+        render json: { suggestions: suggestions }
       end
 
       private

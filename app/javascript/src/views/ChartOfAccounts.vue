@@ -7,7 +7,54 @@
       </div>
       <div class="flex gap-2">
         <a :href="`/api/v1/companies/${companyId}/exports/chart_of_accounts`" class="btn btn-outline btn-sm gap-1">📥 CSV</a>
+        <button @click="showSuggestPanel = !showSuggestPanel" :class="['btn btn-sm gap-1', showSuggestPanel ? 'btn-secondary' : 'btn-outline btn-secondary']">
+          🤖 AI Suggest
+        </button>
         <button @click="openModal()" class="btn btn-primary btn-sm gap-1">+ New Account</button>
+      </div>
+    </div>
+
+    <!-- AI Suggest Panel -->
+    <div v-if="showSuggestPanel" class="card bg-base-100 shadow-xl mb-6">
+      <div class="card-body">
+        <h2 class="card-title text-lg">🤖 AI Chart of Accounts Suggestions</h2>
+        <p class="text-sm text-base-content/60 mb-3">
+          Describe your business and AI will suggest industry-specific accounts to add.
+        </p>
+        <div class="flex gap-3">
+          <input v-model="suggestDescription" type="text" class="input input-bordered flex-1"
+            placeholder="e.g. SaaS startup, restaurant, real estate rental company, law firm, e-commerce store..."
+            @keyup.enter="fetchSuggestions" />
+          <button @click="fetchSuggestions" class="btn btn-secondary" :disabled="suggestLoading || !suggestDescription.trim()">
+            <span v-if="suggestLoading" class="loading loading-spinner loading-sm"></span>
+            <span v-else>Suggest</span>
+          </button>
+        </div>
+
+        <div v-if="suggestedAccounts.length" class="mt-4">
+          <div class="flex justify-between items-center mb-3">
+            <span class="font-medium">{{ suggestedAccounts.length }} suggestions</span>
+            <div class="flex gap-2">
+              <button @click="toggleAllSuggestions" class="btn btn-ghost btn-xs">
+                {{ allSuggestionsSelected ? 'Deselect All' : 'Select All' }}
+              </button>
+              <button @click="addSelectedSuggestions" class="btn btn-primary btn-sm" :disabled="selectedSuggestions.size === 0">
+                Add {{ selectedSuggestions.size }} Selected
+              </button>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <div v-for="s in suggestedAccounts" :key="s.code"
+              :class="['flex items-center gap-3 p-3 rounded-lg border', selectedSuggestions.has(s.code) ? 'border-primary bg-primary/5' : 'border-base-300']">
+              <input type="checkbox" class="checkbox checkbox-sm checkbox-primary"
+                :checked="selectedSuggestions.has(s.code)" @change="toggleSuggestion(s.code)" />
+              <span class="font-mono text-sm w-14">{{ s.code }}</span>
+              <span class="badge badge-sm badge-outline capitalize">{{ s.account_type }}</span>
+              <span class="font-medium flex-1">{{ s.name }}</span>
+              <span class="text-xs text-base-content/50 max-w-xs hidden md:inline">{{ s.reason }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -141,6 +188,65 @@ const deleteAccount = async (acct) => {
 
 const fetchAccounts = async () => {
   accounts.value = await apiClient.get(`/api/v1/companies/${companyId.value}/chart_of_accounts`) || []
+}
+
+// AI Suggestions
+const showSuggestPanel = ref(false)
+const suggestDescription = ref('')
+const suggestLoading = ref(false)
+const suggestedAccounts = ref([])
+const selectedSuggestions = ref(new Set())
+
+const allSuggestionsSelected = computed(() =>
+  suggestedAccounts.value.length > 0 && suggestedAccounts.value.every(s => selectedSuggestions.value.has(s.code))
+)
+
+const fetchSuggestions = async () => {
+  if (!suggestDescription.value.trim()) return
+  suggestLoading.value = true
+  suggestedAccounts.value = []
+  selectedSuggestions.value = new Set()
+
+  try {
+    const data = await apiClient.post(`/api/v1/companies/${companyId.value}/chart_of_accounts/suggest`, {
+      description: suggestDescription.value
+    })
+    suggestedAccounts.value = data?.suggestions || []
+    selectedSuggestions.value = new Set(suggestedAccounts.value.map(s => s.code))
+  } catch (e) {
+    suggestedAccounts.value = []
+  } finally {
+    suggestLoading.value = false
+  }
+}
+
+const toggleSuggestion = (code) => {
+  const s = new Set(selectedSuggestions.value)
+  s.has(code) ? s.delete(code) : s.add(code)
+  selectedSuggestions.value = s
+}
+
+const toggleAllSuggestions = () => {
+  if (allSuggestionsSelected.value) {
+    selectedSuggestions.value = new Set()
+  } else {
+    selectedSuggestions.value = new Set(suggestedAccounts.value.map(s => s.code))
+  }
+}
+
+const addSelectedSuggestions = async () => {
+  const cid = companyId.value
+  const toAdd = suggestedAccounts.value.filter(s => selectedSuggestions.value.has(s.code))
+
+  for (const s of toAdd) {
+    await apiClient.post(`/api/v1/companies/${cid}/chart_of_accounts`, {
+      chart_of_account: { code: s.code, name: s.name, account_type: s.account_type, active: true }
+    })
+  }
+
+  suggestedAccounts.value = suggestedAccounts.value.filter(s => !selectedSuggestions.value.has(s.code))
+  selectedSuggestions.value = new Set()
+  await fetchAccounts()
 }
 
 onMounted(fetchAccounts)

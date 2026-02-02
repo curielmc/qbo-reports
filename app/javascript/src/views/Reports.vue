@@ -30,6 +30,7 @@
       <a :class="['tab', activeTab === 'bs' ? 'tab-active' : '']" @click="activeTab = 'bs'">Balance Sheet</a>
       <a :class="['tab', activeTab === 'tb' ? 'tab-active' : '']" @click="activeTab = 'tb'">Trial Balance</a>
       <a :class="['tab', activeTab === 'gl' ? 'tab-active' : '']" @click="activeTab = 'gl'">General Ledger</a>
+      <a :class="['tab', activeTab === 'tax' ? 'tab-active' : '']" @click="activeTab = 'tax'">Tax Forms</a>
     </div>
 
     <!-- AI Summary -->
@@ -261,6 +262,139 @@
         No journal entries for this period. Categorize some transactions to see double-entry records.
       </div>
     </div>
+
+    <!-- Tax Forms -->
+    <div v-if="activeTab === 'tax'" class="space-y-6">
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <h2 class="card-title">Generate Tax Form</h2>
+          <p class="text-sm text-base-content/60 mb-4">
+            AI maps your Chart of Accounts to IRS tax form lines and generates a draft form based on your financial data.
+          </p>
+          <div class="flex flex-wrap gap-3 items-end">
+            <div class="form-control">
+              <label class="label label-text text-xs">Form Type</label>
+              <select v-model="taxFormType" class="select select-bordered select-sm">
+                <option value="">Select form...</option>
+                <option value="schedule_c">Schedule C - Sole Proprietor</option>
+                <option value="form_1065">Form 1065 - Partnership</option>
+                <option value="schedule_e">Schedule E - Rental / Supplemental</option>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label label-text text-xs">Tax Year</label>
+              <select v-model="taxYear" class="select select-bordered select-sm">
+                <option v-for="y in taxYears" :key="y" :value="y">{{ y }}</option>
+              </select>
+            </div>
+            <button @click="generateTaxForm" class="btn btn-primary btn-sm"
+              :disabled="!taxFormType || taxFormLoading">
+              <span v-if="taxFormLoading" class="loading loading-spinner loading-sm"></span>
+              Generate
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <template v-if="taxFormData && !taxFormData.error">
+        <div class="alert alert-warning shadow-lg">
+          <span>{{ taxFormData.disclaimer }}</span>
+        </div>
+
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body">
+            <div class="flex justify-between items-center">
+              <div>
+                <h2 class="card-title">{{ taxFormData.form_name }}</h2>
+                <p class="text-sm text-base-content/60">{{ taxFormData.company_name }} &mdash; Tax Year {{ taxFormData.tax_year }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Account Mapping -->
+        <div v-if="taxFormData.account_mapping && taxFormData.account_mapping.length" class="card bg-base-100 shadow-xl">
+          <div class="card-body">
+            <h3 class="card-title text-base">Chart of Accounts to Tax Line Mapping</h3>
+            <div class="overflow-x-auto">
+              <table class="table table-sm">
+                <thead>
+                  <tr class="bg-base-200">
+                    <th>Your Account</th>
+                    <th class="text-center">→</th>
+                    <th>Tax Form Line</th>
+                    <th class="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(m, idx) in taxFormData.account_mapping" :key="idx" class="hover">
+                    <td class="font-medium">{{ m.company_account }}</td>
+                    <td class="text-center text-base-content/40">→</td>
+                    <td>
+                      <span class="font-mono text-sm">Line {{ m.tax_line }}</span>
+                      <span class="text-sm text-base-content/60 ml-2">{{ m.tax_description }}</span>
+                    </td>
+                    <td class="text-right font-mono">{{ formatCurrency(m.amount) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Sections -->
+        <div v-for="section in taxFormData.sections" :key="section.title" class="card bg-base-100 shadow">
+          <div class="card-body">
+            <h3 class="card-title text-base">{{ section.title }}</h3>
+            <div class="overflow-x-auto">
+              <table class="table table-sm">
+                <thead>
+                  <tr class="bg-base-200">
+                    <th class="w-16">Line</th>
+                    <th>Description</th>
+                    <th class="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="line in section.lines" :key="line.line" :class="['hover', line.amount ? '' : 'opacity-40']">
+                    <td class="font-mono text-sm">{{ line.line }}</td>
+                    <td>{{ line.description }}</td>
+                    <td class="text-right font-mono font-semibold">{{ line.amount ? formatCurrency(line.amount) : '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Totals -->
+        <div v-if="taxFormData.totals" class="card bg-primary text-primary-content shadow-xl">
+          <div class="card-body">
+            <h3 class="card-title">Summary</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div v-for="(val, key) in taxFormData.totals" :key="key" class="text-center">
+                <div class="text-sm opacity-80 capitalize">{{ key.replace(/_/g, ' ') }}</div>
+                <div class="text-2xl font-bold font-mono">{{ formatCurrency(val) }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div v-if="taxFormData.notes && taxFormData.notes.length" class="card bg-base-100 shadow">
+          <div class="card-body">
+            <h3 class="card-title text-base">Notes</h3>
+            <ul class="list-disc list-inside space-y-1 text-sm text-base-content/70">
+              <li v-for="(note, idx) in taxFormData.notes" :key="idx">{{ note }}</li>
+            </ul>
+          </div>
+        </div>
+      </template>
+
+      <div v-if="taxFormData && taxFormData.error" class="alert alert-error shadow-lg">
+        <span>{{ taxFormData.error }}</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -378,11 +512,36 @@ const openDrilldown = async (item) => {
   }
 }
 
+// Tax Forms state
+const taxFormType = ref('')
+const taxYear = ref(new Date().getFullYear() - 1)
+const taxFormData = ref(null)
+const taxFormLoading = ref(false)
+const taxYears = computed(() => {
+  const y = new Date().getFullYear()
+  return [y - 1, y - 2, y - 3, y]
+})
+
+const generateTaxForm = async () => {
+  if (!taxFormType.value) return
+  taxFormLoading.value = true
+  taxFormData.value = null
+  const cid = companyId.value
+  try {
+    taxFormData.value = await apiClient.get(`/api/v1/companies/${cid}/reports/tax_form?form_type=${taxFormType.value}&tax_year=${taxYear.value}`)
+  } catch (e) {
+    taxFormData.value = { error: 'Failed to generate tax form. Please try again.' }
+  } finally {
+    taxFormLoading.value = false
+  }
+}
+
 const refresh = async () => {
+  if (activeTab.value === 'tax') return // Tax forms have their own generate button
   loading.value = true
   summary.value = null
   const cid = companyId.value
-  
+
   if (activeTab.value === 'pl') {
     const data = await apiClient.get(`/api/v1/companies/${cid}/reports/profit_loss?start_date=${startDate.value}&end_date=${endDate.value}`)
     plReport.value = data

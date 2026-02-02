@@ -233,6 +233,21 @@ module Api
         }
       end
 
+      # GET /api/v1/companies/:company_id/reports/tax_form
+      def tax_form
+        form_type = params[:form_type]
+        tax_year = params[:tax_year] || Date.current.year - 1
+
+        generator = TaxFormGenerator.new(@company)
+
+        if form_type.blank?
+          render json: { supported_forms: generator.supported_forms }
+        else
+          result = generator.generate(form_type, tax_year)
+          render json: result
+        end
+      end
+
       private
 
       def set_company

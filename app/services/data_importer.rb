@@ -557,10 +557,8 @@ class DataImporter
         reference_number: entry[:doc_num] || entry[:reference]
       )
 
-      # Create journal entry if categorized
-      if coa && account
-        BookkeeperAi.new(@company, @user).send(:create_journal_entry, txn) rescue nil
-      end
+      # Journal entry is created automatically via AccountTransaction's
+      # after_save :sync_journal_entry callback when chart_of_account_id is set
 
       created += 1
     end
