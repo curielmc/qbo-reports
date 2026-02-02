@@ -11,6 +11,7 @@ services:
       bundle config set --local without 'development test'
       bundle install
       bundle exec rake assets:precompile
+      bundle exec rake db:migrate
     startCommand: bundle exec puma -C config/puma.rb
     envVars:
       - key: DATABASE_URL
