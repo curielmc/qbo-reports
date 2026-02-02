@@ -87,36 +87,16 @@ class ReconciliationService
   # AI-assisted: suggest which transactions to clear
   def suggest_clears(reconciliation_id:)
     recon = @company.reconciliations.find(reconciliation_id)
-    target = recon.statement_balance
 
-    uncleared = recon.account.account_transactions
-      .where('date <= ?', recon.statement_date)
-      .where(reconciliation_status: 'uncleared')
-      .order(date: :asc)
-
-    # Simple greedy: try to find a combination that sums to the target
-    running = 0
-    suggested = []
-
-    uncleared.each do |txn|
-      if (running + txn.amount - target).abs >= (running - target).abs
-        # Adding this makes it worse — skip
-        next
-      end
-      suggested << txn.id
-      running += txn.amount
-      break if running == target
-    end
-
-    # If simple doesn't work, just suggest all
-    if (running - target).abs > 0.01 && uncleared.sum(:amount) == target
-      suggested = uncleared.pluck(:id)
-    end
+    matcher = SmartReconciliationMatcher.new(@company)
+    result = matcher.suggest_matches(recon)
 
     {
-      suggested_transaction_ids: suggested,
-      projected_balance: running,
-      difference: (target - running).round(2)
+      suggested_transaction_ids: (result[:suggested] || []).map { |s| s[:id] },
+      suggested_details: result[:suggested] || [],
+      projected_balance: result[:projected_balance],
+      difference: result[:difference],
+      ai_notes: result[:ai_notes]
     }
   end
 

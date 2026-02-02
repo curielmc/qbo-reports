@@ -24,6 +24,155 @@
       </div>
     </div>
 
+    <!-- Natural Language Query Bar -->
+    <div class="card bg-base-100 shadow mb-6">
+      <div class="card-body py-3 px-4">
+        <form @submit.prevent="submitNlQuery" class="flex gap-2 items-center">
+          <span class="text-lg">🔍</span>
+          <input v-model="nlQuestion" type="text" class="input input-bordered input-sm flex-1"
+            placeholder="Ask anything... e.g. &quot;How much did we spend on software last quarter?&quot;"
+            :disabled="nlLoading" />
+          <button type="submit" class="btn btn-primary btn-sm" :disabled="nlLoading || !nlQuestion.trim()">
+            <span v-if="nlLoading" class="loading loading-spinner loading-sm"></span>
+            <span v-else>Ask</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- NL Query Result -->
+    <div v-if="nlResult" class="card bg-base-100 shadow-xl mb-6 border border-primary/20">
+      <div class="card-body">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-sm text-base-content/50 mb-1">Q: {{ nlResult.question }}</p>
+            <p class="font-medium">{{ nlResult.text }}</p>
+          </div>
+          <button @click="nlResult = null" class="btn btn-ghost btn-xs">X</button>
+        </div>
+
+        <!-- Render data based on query type -->
+        <div v-if="nlResult.data" class="mt-4">
+          <!-- Spending/Income by category -->
+          <div v-if="nlResult.data.items" class="overflow-x-auto">
+            <table class="table table-sm">
+              <thead><tr><th>Category</th><th class="text-right">Amount</th></tr></thead>
+              <tbody>
+                <tr v-for="item in nlResult.data.items" :key="item.name" class="hover">
+                  <td>{{ item.name }}</td>
+                  <td class="text-right font-mono">{{ formatCurrency(item.amount) }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="font-bold border-t-2">
+                  <td>Total</td>
+                  <td class="text-right font-mono">{{ formatCurrency(nlResult.data.total) }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- P&L result -->
+          <div v-if="nlResult.data.type === 'profit_loss'" class="grid grid-cols-3 gap-4 mt-2">
+            <div class="stat bg-success/10 rounded-box p-3">
+              <div class="stat-title text-xs">Income</div>
+              <div class="stat-value text-lg font-mono text-success">{{ formatCurrency(nlResult.data.income) }}</div>
+            </div>
+            <div class="stat bg-error/10 rounded-box p-3">
+              <div class="stat-title text-xs">Expenses</div>
+              <div class="stat-value text-lg font-mono text-error">{{ formatCurrency(nlResult.data.expenses) }}</div>
+            </div>
+            <div class="stat bg-primary/10 rounded-box p-3">
+              <div class="stat-title text-xs">Net Income</div>
+              <div class="stat-value text-lg font-mono">{{ formatCurrency(nlResult.data.net_income) }}</div>
+            </div>
+          </div>
+
+          <!-- Trend data -->
+          <div v-if="nlResult.data.type === 'trend'" class="overflow-x-auto mt-2">
+            <table class="table table-sm">
+              <thead><tr><th>Month</th><th class="text-right">Amount</th></tr></thead>
+              <tbody>
+                <tr v-for="d in nlResult.data.data" :key="d.month" class="hover">
+                  <td>{{ d.month }}</td>
+                  <td class="text-right font-mono">{{ formatCurrency(d.amount) }}</td>
+                </tr>
+              </tbody>
+              <tfoot v-if="nlResult.data.average">
+                <tr class="font-bold border-t-2"><td>Average</td><td class="text-right font-mono">{{ formatCurrency(nlResult.data.average) }}</td></tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Compare periods -->
+          <div v-if="nlResult.data.type === 'compare_periods'" class="mt-2">
+            <div class="grid grid-cols-2 gap-4 mb-4">
+              <div class="stat bg-base-200 rounded-box p-3">
+                <div class="stat-title text-xs">{{ nlResult.data.period1?.label }}</div>
+                <div class="stat-value text-lg font-mono">{{ formatCurrency(nlResult.data.period1?.net) }}</div>
+                <div class="text-xs">Income {{ formatCurrency(nlResult.data.period1?.income) }} / Expenses {{ formatCurrency(nlResult.data.period1?.expenses) }}</div>
+              </div>
+              <div class="stat bg-base-200 rounded-box p-3">
+                <div class="stat-title text-xs">{{ nlResult.data.period2?.label }}</div>
+                <div class="stat-value text-lg font-mono">{{ formatCurrency(nlResult.data.period2?.net) }}</div>
+                <div class="text-xs">Income {{ formatCurrency(nlResult.data.period2?.income) }} / Expenses {{ formatCurrency(nlResult.data.period2?.expenses) }}</div>
+              </div>
+            </div>
+            <div v-if="nlResult.data.expense_breakdown && nlResult.data.expense_breakdown.length" class="overflow-x-auto">
+              <table class="table table-sm">
+                <thead><tr><th>Category</th><th class="text-right">Period 1</th><th class="text-right">Period 2</th><th class="text-right">Change</th></tr></thead>
+                <tbody>
+                  <tr v-for="c in nlResult.data.expense_breakdown" :key="c.name" class="hover">
+                    <td>{{ c.name }}</td>
+                    <td class="text-right font-mono">{{ formatCurrency(c.period1) }}</td>
+                    <td class="text-right font-mono">{{ formatCurrency(c.period2) }}</td>
+                    <td :class="['text-right font-mono', c.change > 0 ? 'text-error' : 'text-success']">
+                      {{ c.change > 0 ? '+' : '' }}{{ formatCurrency(c.change) }} ({{ c.pct > 0 ? '+' : '' }}{{ c.pct }}%)
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Top vendors -->
+          <div v-if="nlResult.data.type === 'top_vendors'" class="overflow-x-auto mt-2">
+            <table class="table table-sm">
+              <thead><tr><th>Vendor</th><th class="text-right">Total</th><th class="text-right">Txns</th></tr></thead>
+              <tbody>
+                <tr v-for="v in nlResult.data.vendors" :key="v.vendor" class="hover">
+                  <td>{{ v.vendor }}</td>
+                  <td class="text-right font-mono">{{ formatCurrency(v.total) }}</td>
+                  <td class="text-right font-mono">{{ v.transactions }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Search results -->
+          <div v-if="nlResult.data.type === 'search'" class="overflow-x-auto mt-2">
+            <table class="table table-sm">
+              <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="text-right">Amount</th></tr></thead>
+              <tbody>
+                <tr v-for="(t, idx) in nlResult.data.results" :key="idx" class="hover">
+                  <td class="font-mono text-sm">{{ t.date }}</td>
+                  <td>{{ t.description }}</td>
+                  <td><span v-if="t.category" class="badge badge-sm badge-primary">{{ t.category }}</span></td>
+                  <td :class="['text-right font-mono', t.amount < 0 ? 'text-error' : 'text-success']">{{ formatCurrency(t.amount) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Account balance -->
+          <div v-if="nlResult.data.type === 'account_balance'" class="stat bg-base-200 rounded-box p-4 mt-2 inline-block">
+            <div class="stat-title text-xs">{{ nlResult.data.account }} ({{ nlResult.data.account_type }})</div>
+            <div class="stat-value text-2xl font-mono">{{ formatCurrency(nlResult.data.balance) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Report Tabs -->
     <div class="tabs tabs-boxed mb-6">
       <a :class="['tab', activeTab === 'pl' ? 'tab-active' : '']" @click="activeTab = 'pl'">Profit & Loss</a>
@@ -31,10 +180,11 @@
       <a :class="['tab', activeTab === 'tb' ? 'tab-active' : '']" @click="activeTab = 'tb'">Trial Balance</a>
       <a :class="['tab', activeTab === 'gl' ? 'tab-active' : '']" @click="activeTab = 'gl'">General Ledger</a>
       <a :class="['tab', activeTab === 'tax' ? 'tab-active' : '']" @click="activeTab = 'tax'">Tax Forms</a>
+      <a :class="['tab', activeTab === 'monthend' ? 'tab-active' : '']" @click="activeTab = 'monthend'; fetchMonthEnd()">Month-End</a>
     </div>
 
     <!-- AI Summary -->
-    <div v-if="summary" class="alert alert-info shadow-lg mb-6">
+    <div v-if="summary && activeTab !== 'monthend'" class="alert alert-info shadow-lg mb-6">
       <div class="flex gap-3">
         <span class="text-2xl">🤖</span>
         <div>
@@ -47,7 +197,7 @@
     <!-- P&L Report -->
     <div v-if="activeTab === 'pl'" class="space-y-6">
       <div class="flex justify-end">
-        <a :href="`/api/v1/companies/${companyId}/exports/profit_loss?start_date=${startDate}&end_date=${endDate}`" 
+        <a :href="`/api/v1/companies/${companyId}/exports/profit_loss?start_date=${startDate}&end_date=${endDate}`"
           class="btn btn-outline btn-sm gap-1">📥 Export CSV</a>
       </div>
 
@@ -104,7 +254,7 @@
       <div class="flex justify-between">
         <div v-if="bsReport && bsReport.balanced" class="badge badge-success gap-1">✓ Balanced</div>
         <div v-else class="badge badge-error gap-1">⚠ Unbalanced</div>
-        <a :href="`/api/v1/companies/${companyId}/exports/balance_sheet?as_of_date=${endDate}`" 
+        <a :href="`/api/v1/companies/${companyId}/exports/balance_sheet?as_of_date=${endDate}`"
           class="btn btn-outline btn-sm gap-1">📥 Export CSV</a>
       </div>
 
@@ -395,6 +545,152 @@
         <span>{{ taxFormData.error }}</span>
       </div>
     </div>
+
+    <!-- Month-End Close Checklist -->
+    <div v-if="activeTab === 'monthend'" class="space-y-6">
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+          <div class="flex flex-wrap justify-between items-center gap-3">
+            <div>
+              <h2 class="card-title">Month-End Close Checklist</h2>
+              <p class="text-sm text-base-content/60">AI analyzes your books and generates a smart checklist</p>
+            </div>
+            <div class="flex gap-2 items-end">
+              <div class="form-control">
+                <label class="label label-text text-xs">Period</label>
+                <select v-model="meSelectedPeriod" class="select select-bordered select-sm">
+                  <option v-for="p in meAvailablePeriods" :key="p.value" :value="p.value">{{ p.label }}</option>
+                </select>
+              </div>
+              <button @click="fetchMonthEnd" class="btn btn-primary btn-sm" :disabled="meLoading">
+                <span v-if="meLoading" class="loading loading-spinner loading-sm"></span>
+                <span v-else>Analyze</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="meLoading" class="flex justify-center py-12">
+        <span class="loading loading-spinner loading-lg"></span>
+        <span class="ml-3 text-base-content/60">Analyzing your books...</span>
+      </div>
+
+      <template v-if="meData && !meLoading">
+        <!-- Health Score -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div class="stat bg-base-100 rounded-box shadow p-4">
+            <div class="stat-title text-xs">Health Score</div>
+            <div :class="['stat-value text-3xl', meData.health_score >= 80 ? 'text-success' : meData.health_score >= 50 ? 'text-warning' : 'text-error']">
+              {{ meData.health_score }}
+            </div>
+            <div class="stat-desc">/ 100</div>
+          </div>
+          <div class="stat bg-success/10 rounded-box shadow p-4">
+            <div class="stat-title text-xs">Passing</div>
+            <div class="stat-value text-xl text-success">{{ meChecklist.filter(i => i.status === 'pass').length }}</div>
+          </div>
+          <div class="stat bg-warning/10 rounded-box shadow p-4">
+            <div class="stat-title text-xs">Warnings</div>
+            <div class="stat-value text-xl text-warning">{{ meChecklist.filter(i => i.status === 'warning').length }}</div>
+          </div>
+          <div class="stat bg-error/10 rounded-box shadow p-4">
+            <div class="stat-title text-xs">Issues</div>
+            <div class="stat-value text-xl text-error">{{ meChecklist.filter(i => i.status === 'fail').length }}</div>
+          </div>
+        </div>
+
+        <!-- P&L Summary -->
+        <div v-if="meData.diagnostics?.pl_summary" class="card bg-base-100 shadow">
+          <div class="card-body py-4">
+            <h3 class="card-title text-base">{{ meData.period }} P&L Summary</h3>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="text-center">
+                <div class="text-xs text-base-content/50">Income</div>
+                <div class="text-lg font-bold font-mono text-success">{{ formatCurrency(meData.diagnostics.pl_summary.income) }}</div>
+              </div>
+              <div class="text-center">
+                <div class="text-xs text-base-content/50">Expenses</div>
+                <div class="text-lg font-bold font-mono text-error">{{ formatCurrency(meData.diagnostics.pl_summary.expenses) }}</div>
+              </div>
+              <div class="text-center">
+                <div class="text-xs text-base-content/50">Net Income</div>
+                <div :class="['text-lg font-bold font-mono', meData.diagnostics.pl_summary.net_income >= 0 ? 'text-success' : 'text-error']">
+                  {{ formatCurrency(meData.diagnostics.pl_summary.net_income) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Checklist Items -->
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body">
+            <h3 class="card-title text-base mb-4">Checklist</h3>
+            <div class="space-y-3">
+              <div v-for="item in meChecklist" :key="item.key"
+                :class="['flex items-start gap-3 p-3 rounded-lg border', meItemBorder(item.status)]">
+                <div class="mt-0.5">
+                  <span v-if="item.status === 'pass'" class="text-success text-lg">✓</span>
+                  <span v-else-if="item.status === 'fail'" class="text-error text-lg">✗</span>
+                  <span v-else-if="item.status === 'warning'" class="text-warning text-lg">!</span>
+                  <span v-else class="text-info text-lg">○</span>
+                </div>
+                <div class="flex-1">
+                  <p :class="['font-medium text-sm', item.status === 'pass' ? 'text-base-content/60' : '']">
+                    {{ item.label }}
+                  </p>
+                  <p v-if="item.details" class="text-xs text-base-content/50 mt-1">{{ item.details }}</p>
+                </div>
+                <span :class="['badge badge-sm', meBadgeClass(item.status)]">
+                  {{ item.status }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diagnostics Detail (collapsible) -->
+        <div class="collapse collapse-arrow bg-base-100 shadow">
+          <input type="checkbox" />
+          <div class="collapse-title font-medium">Detailed Diagnostics</div>
+          <div class="collapse-content">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Uncategorized -->
+              <div class="p-3 rounded-lg bg-base-200">
+                <h4 class="font-medium text-sm mb-1">Uncategorized Transactions</h4>
+                <p class="text-sm">{{ meData.diagnostics?.uncategorized?.message }}</p>
+              </div>
+              <!-- Reconciliation -->
+              <div class="p-3 rounded-lg bg-base-200">
+                <h4 class="font-medium text-sm mb-1">Reconciliation</h4>
+                <p class="text-sm">{{ meData.diagnostics?.reconciliation?.message }}</p>
+              </div>
+              <!-- Anomalies -->
+              <div class="p-3 rounded-lg bg-base-200">
+                <h4 class="font-medium text-sm mb-1">Anomalies</h4>
+                <p class="text-sm">{{ meData.diagnostics?.anomalies?.message }}</p>
+              </div>
+              <!-- Journal -->
+              <div class="p-3 rounded-lg bg-base-200">
+                <h4 class="font-medium text-sm mb-1">Journal Entries</h4>
+                <p class="text-sm">{{ meData.diagnostics?.journal_entries?.message }}</p>
+              </div>
+              <!-- Balance Sheet -->
+              <div class="p-3 rounded-lg bg-base-200">
+                <h4 class="font-medium text-sm mb-1">Balance Sheet</h4>
+                <p class="text-sm">{{ meData.diagnostics?.balance_sheet?.message }}</p>
+              </div>
+              <!-- Receipts -->
+              <div class="p-3 rounded-lg bg-base-200">
+                <h4 class="font-medium text-sm mb-1">Receipts</h4>
+                <p class="text-sm">{{ meData.diagnostics?.receipts?.message }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -536,8 +832,81 @@ const generateTaxForm = async () => {
   }
 }
 
+// Natural Language Query state
+const nlQuestion = ref('')
+const nlLoading = ref(false)
+const nlResult = ref(null)
+
+const submitNlQuery = async () => {
+  if (!nlQuestion.value.trim()) return
+  nlLoading.value = true
+  nlResult.value = null
+  const cid = companyId.value
+  const question = nlQuestion.value
+
+  try {
+    const data = await apiClient.post(`/api/v1/companies/${cid}/reports/nl_query`, { question })
+    nlResult.value = { ...data, question }
+  } catch (e) {
+    nlResult.value = { text: 'Sorry, something went wrong. Please try again.', data: null, question }
+  } finally {
+    nlLoading.value = false
+    nlQuestion.value = ''
+  }
+}
+
+// Month-End Close state
+const meData = ref(null)
+const meLoading = ref(false)
+const meSelectedPeriod = ref(() => {
+  const d = new Date()
+  d.setMonth(d.getMonth() - 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+})()
+
+const meAvailablePeriods = computed(() => {
+  const periods = []
+  const now = new Date()
+  for (let i = 1; i <= 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    periods.push({
+      value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`,
+      label: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    })
+  }
+  return periods
+})
+
+const meChecklist = computed(() => meData.value?.checklist || [])
+
+const meItemBorder = (status) => ({
+  pass: 'border-success/30 bg-success/5',
+  fail: 'border-error/30 bg-error/5',
+  warning: 'border-warning/30 bg-warning/5',
+  info: 'border-info/20 bg-info/5'
+}[status] || 'border-base-300')
+
+const meBadgeClass = (status) => ({
+  pass: 'badge-success',
+  fail: 'badge-error',
+  warning: 'badge-warning',
+  info: 'badge-info'
+}[status] || 'badge-ghost')
+
+const fetchMonthEnd = async () => {
+  meLoading.value = true
+  const cid = companyId.value
+  try {
+    meData.value = await apiClient.get(`/api/v1/companies/${cid}/reports/month_end_checklist?period=${meSelectedPeriod.value}`)
+  } catch (e) {
+    meData.value = null
+  } finally {
+    meLoading.value = false
+  }
+}
+
 const refresh = async () => {
-  if (activeTab.value === 'tax') return // Tax forms have their own generate button
+  if (activeTab.value === 'tax' || activeTab.value === 'monthend') return
   loading.value = true
   summary.value = null
   const cid = companyId.value

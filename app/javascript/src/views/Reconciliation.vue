@@ -42,10 +42,25 @@
 
         <!-- Actions -->
         <div class="flex gap-2 mb-4">
-          <button @click="suggestClears" class="btn btn-outline btn-sm">🤖 AI Suggest</button>
+          <button @click="suggestClears" :disabled="suggesting" class="btn btn-outline btn-sm">
+            <span v-if="suggesting" class="loading loading-spinner loading-sm"></span>
+            🤖 Smart Match
+          </button>
           <button @click="finishRecon" :disabled="active.difference !== 0" class="btn btn-success btn-sm">
             ✅ Finish Reconciliation
           </button>
+        </div>
+
+        <!-- AI Match Notes -->
+        <div v-if="aiMatchNotes" class="alert alert-info mb-4">
+          <div class="flex gap-2 items-start">
+            <span>🤖</span>
+            <div>
+              <p class="text-sm font-medium">AI Matching Notes</p>
+              <p class="text-sm">{{ aiMatchNotes }}</p>
+            </div>
+            <button @click="aiMatchNotes = null" class="btn btn-ghost btn-xs">X</button>
+          </div>
         </div>
 
         <!-- Transaction List -->
@@ -57,19 +72,28 @@
                 <th>Date</th>
                 <th>Description</th>
                 <th class="text-right">Amount</th>
+                <th v-if="hasConfidenceScores" class="text-right w-20">Match</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="txn in active.transactions" :key="txn.id" 
-                :class="['hover cursor-pointer', txn.cleared ? 'bg-success/10' : '']"
+              <tr v-for="txn in active.transactions" :key="txn.id"
+                :class="['hover cursor-pointer', txn.cleared ? 'bg-success/10' : '', txn.confidence ? 'border-l-2 border-l-secondary' : '']"
                 @click="toggleCleared(txn)">
                 <td>
                   <input type="checkbox" :checked="txn.cleared" class="checkbox checkbox-sm checkbox-success" @click.stop="toggleCleared(txn)" />
                 </td>
                 <td class="text-sm">{{ txn.date }}</td>
-                <td class="text-sm">{{ txn.description }}</td>
+                <td class="text-sm">
+                  {{ txn.description }}
+                  <span v-if="txn.match_reason" class="text-xs text-base-content/40 block">{{ txn.match_reason }}</span>
+                </td>
                 <td :class="['text-right font-mono text-sm', txn.amount < 0 ? 'text-error' : 'text-success']">
                   {{ formatCurrency(txn.amount) }}
+                </td>
+                <td v-if="hasConfidenceScores" class="text-right">
+                  <span v-if="txn.confidence" :class="['badge badge-xs', txn.confidence >= 90 ? 'badge-success' : txn.confidence >= 70 ? 'badge-warning' : 'badge-ghost']">
+                    {{ txn.confidence }}%
+                  </span>
                 </td>
               </tr>
             </tbody>
@@ -146,7 +170,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '../stores/app'
 import { apiClient } from '../api/client'
 
@@ -159,7 +183,13 @@ const active = ref(null)
 const history = ref([])
 const accounts = ref([])
 const showNewModal = ref(false)
+const suggesting = ref(false)
+const aiMatchNotes = ref(null)
 const newRecon = ref({ account_id: '', statement_date: '', statement_balance: 0 })
+
+const hasConfidenceScores = computed(() =>
+  active.value?.transactions?.some(t => t.confidence)
+)
 
 const startRecon = async () => {
   const result = await apiClient.post(`/api/v1/companies/${companyId()}/reconciliations`, newRecon.value)
@@ -182,24 +212,66 @@ const toggleCleared = async (txn) => {
 }
 
 const suggestClears = async () => {
+  suggesting.value = true
+  aiMatchNotes.value = null
+
   const result = await apiClient.patch(
     `/api/v1/companies/${companyId()}/reconciliations/${active.value.id}/suggest`
   )
+
   if (result?.suggested_transaction_ids) {
-    active.value.transactions.forEach(t => {
-      if (result.suggested_transaction_ids.includes(t.id)) t.cleared = true
-    })
-    // Apply all suggestions
-    for (const id of result.suggested_transaction_ids) {
-      await apiClient.patch(
-        `/api/v1/companies/${companyId()}/reconciliations/${active.value.id}/toggle`,
-        { transaction_id: id }
-      )
+    // Build a map of confidence scores and reasons from suggested_details
+    const detailsMap = {}
+    if (result.suggested_details) {
+      result.suggested_details.forEach(d => {
+        detailsMap[d.id] = { confidence: d.confidence, reason: d.reason }
+      })
     }
-    // Refresh
+
+    // Annotate transactions with confidence scores
+    active.value.transactions.forEach(t => {
+      if (detailsMap[t.id]) {
+        t.confidence = detailsMap[t.id].confidence
+        t.match_reason = detailsMap[t.id].reason
+      }
+    })
+
+    // Show AI notes if available
+    if (result.ai_notes) {
+      aiMatchNotes.value = result.ai_notes
+    }
+
+    // Apply all suggestions by toggling uncleared suggested transactions
+    for (const id of result.suggested_transaction_ids) {
+      const txn = active.value.transactions.find(t => t.id === id)
+      if (txn && !txn.cleared) {
+        await apiClient.patch(
+          `/api/v1/companies/${companyId()}/reconciliations/${active.value.id}/toggle`,
+          { transaction_id: id }
+        )
+      }
+    }
+
+    // Refresh reconciliation state
     const recon = await apiClient.get(`/api/v1/companies/${companyId()}/reconciliations/${active.value.id}`)
-    if (recon) active.value = { ...recon.reconciliation, transactions: recon.transactions }
+    if (recon) {
+      // Preserve confidence scores when refreshing
+      const oldConfidence = {}
+      active.value.transactions.forEach(t => {
+        if (t.confidence) oldConfidence[t.id] = { confidence: t.confidence, match_reason: t.match_reason }
+      })
+
+      const transactions = recon.transactions.map(t => ({
+        ...t,
+        confidence: oldConfidence[t.id]?.confidence || null,
+        match_reason: oldConfidence[t.id]?.match_reason || null
+      }))
+
+      active.value = { ...recon.reconciliation, transactions }
+    }
   }
+
+  suggesting.value = false
 }
 
 const finishRecon = async () => {
@@ -208,8 +280,9 @@ const finishRecon = async () => {
   )
   if (result?.success) {
     active.value = null
+    aiMatchNotes.value = null
     await fetchHistory()
-    alert('✅ Reconciliation complete!')
+    alert('Reconciliation complete!')
   } else {
     alert(result?.message || 'Cannot finalize — difference is not zero.')
   }
