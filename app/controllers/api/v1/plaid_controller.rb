@@ -90,7 +90,7 @@ module Api
             account = company.accounts.find_by(plaid_account_id: pt.account_id)
             next unless account
 
-            account.transactions.find_or_create_by(plaid_transaction_id: pt.transaction_id) do |t|
+            account.account_transactions.find_or_create_by(plaid_transaction_id: pt.transaction_id) do |t|
               t.date = pt.date
               t.description = pt.name
               t.amount = -pt.amount # Plaid uses negative for debits
@@ -104,7 +104,7 @@ module Api
 
           # Process modified
           response.modified.each do |pt|
-            txn = Transaction.find_by(plaid_transaction_id: pt.transaction_id)
+            txn = AccountTransaction.find_by(plaid_transaction_id: pt.transaction_id)
             next unless txn
             txn.update(
               date: pt.date,
@@ -118,7 +118,7 @@ module Api
 
           # Process removed
           response.removed.each do |pt|
-            Transaction.find_by(plaid_transaction_id: pt.transaction_id)&.destroy
+            AccountTransaction.find_by(plaid_transaction_id: pt.transaction_id)&.destroy
             removed_count += 1
           end
 

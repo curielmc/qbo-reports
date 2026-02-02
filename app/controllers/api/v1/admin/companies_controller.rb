@@ -10,7 +10,7 @@ module Api
               name: c.name,
               members_count: c.users.count,
               accounts_count: c.accounts.count,
-              transactions_count: c.transactions.count,
+              transactions_count: c.account_transactions.count,
               created_at: c.created_at
             }
           }

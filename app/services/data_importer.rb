@@ -521,7 +521,7 @@ class DataImporter
       next unless entry[:date]
 
       # Duplicate check
-      existing = @company.transactions.where(
+      existing = @company.account_transactions.where(
         date: entry[:date],
         amount: entry[:amount],
         description: entry[:description]
@@ -546,7 +546,7 @@ class DataImporter
         coa = @company.chart_of_accounts.find_by('LOWER(name) LIKE ?', "%#{category_name.downcase}%")
       end
 
-      txn = @company.transactions.create!(
+      txn = @company.account_transactions.create!(
         account: account,
         chart_of_account: coa,
         date: entry[:date],

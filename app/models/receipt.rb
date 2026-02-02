@@ -1,7 +1,7 @@
 class Receipt < ApplicationRecord
   belongs_to :company
   belongs_to :user
-  belongs_to :transaction, optional: true
+  belongs_to :account_transaction, foreign_key: 'transaction_id', optional: true
 
   scope :pending, -> { where(status: 'pending') }
   scope :unmatched, -> { where(status: 'unmatched') }
@@ -12,7 +12,7 @@ class Receipt < ApplicationRecord
     return if amount.blank? || receipt_date.blank?
 
     # Look for transactions within 3 days and similar amount
-    candidates = company.transactions
+    candidates = company.account_transactions
       .where(date: (receipt_date - 3.days)..(receipt_date + 3.days))
       .where('ABS(amount) BETWEEN ? AND ?', amount.abs * 0.95, amount.abs * 1.05)
       .where(reconciliation_status: 'uncleared')
@@ -39,6 +39,6 @@ class Receipt < ApplicationRecord
   end
 
   def match_to!(txn)
-    update!(transaction: txn, status: 'matched')
+    update!(account_transaction: txn, status: 'matched')
   end
 end

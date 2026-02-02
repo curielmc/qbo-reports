@@ -35,7 +35,7 @@ class CategorizationRule < ApplicationRecord
     rules = company.categorization_rules.active.by_priority
     return 0 if rules.empty?
 
-    uncategorized = company.transactions.where(chart_of_account_id: nil)
+    uncategorized = company.account_transactions.where(chart_of_account_id: nil)
     categorized_count = 0
 
     uncategorized.find_each do |transaction|
@@ -58,7 +58,7 @@ class CategorizationRule < ApplicationRecord
     suggestions = []
 
     company.chart_of_accounts.active.each do |coa|
-      transactions = coa.transactions.where.not(merchant_name: [nil, ''])
+      transactions = coa.account_transactions.where.not(merchant_name: [nil, ''])
       
       # Group by merchant name and find common ones
       merchant_counts = transactions.group(:merchant_name).count

@@ -143,7 +143,7 @@ class JournalEntryAi
     
     regular_expenses.each do |expense|
       # Check if this expense appeared this month
-      this_month = @company.transactions
+      this_month = @company.account_transactions
         .where(date: period_start..period_end)
         .where('LOWER(merchant_name) LIKE ? OR LOWER(description) LIKE ?',
           "%#{expense[:merchant].downcase}%", "%#{expense[:merchant].downcase}%")
@@ -225,7 +225,7 @@ class JournalEntryAi
     suggestions = []
 
     # Check for large deposits that might be loans
-    large_deposits = @company.transactions
+    large_deposits = @company.account_transactions
       .where(date: period_start..period_end)
       .where('amount > ?', 5000)
       .where(chart_of_account_id: nil)
@@ -293,7 +293,7 @@ class JournalEntryAi
       .map { |c| { name: c.name, balance: c.journal_lines.sum(:debit) - c.journal_lines.sum(:credit) } }
       .select { |c| c[:balance] != 0 }
 
-    uncategorized_count = @company.transactions.where(chart_of_account_id: nil).count
+    uncategorized_count = @company.account_transactions.where(chart_of_account_id: nil).count
     
     # Don't call AI if there's not much to analyze
     return [] if income.empty? && expenses.empty?
@@ -400,7 +400,7 @@ class JournalEntryAi
     # Find merchants that appear monthly (at least 2 of last 3 months)
     three_months_ago = 3.months.ago.to_date
     
-    @company.transactions
+    @company.account_transactions
       .where(date: three_months_ago..Date.current)
       .where('amount < 0')
       .where.not(merchant_name: [nil, ''])
@@ -409,7 +409,7 @@ class JournalEntryAi
       .having('COUNT(DISTINCT date_trunc(\'month\', date)) >= 2')
       .select('merchant_name, AVG(ABS(amount)) as avg_amount, COUNT(*) as cnt')
       .map do |row|
-        category = @company.transactions
+        category = @company.account_transactions
           .where(merchant_name: row.merchant_name)
           .where.not(chart_of_account_id: nil)
           .last&.chart_of_account&.name

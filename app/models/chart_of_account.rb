@@ -1,6 +1,6 @@
 class ChartOfAccount < ApplicationRecord
   belongs_to :company
-  has_many :transactions, dependent: :nullify
+  has_many :account_transactions, dependent: :nullify
   has_many :journal_lines, dependent: :restrict_with_error
   has_many :categorization_rules, dependent: :destroy
 

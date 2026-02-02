@@ -18,7 +18,7 @@ class ReconciliationService
     )
 
     # Get unreconciled transactions up to statement date
-    uncleared = account.transactions
+    uncleared = account.account_transactions
       .where('date <= ?', statement_date)
       .where(reconciliation_status: 'uncleared')
       .order(date: :asc)
@@ -35,7 +35,7 @@ class ReconciliationService
   # Clear/unclear a transaction
   def toggle_cleared(reconciliation_id:, transaction_id:)
     recon = @company.reconciliations.find(reconciliation_id)
-    txn = @company.transactions.find(transaction_id)
+    txn = @company.account_transactions.find(transaction_id)
 
     if txn.reconciliation_status == 'cleared' && txn.reconciliation_id == recon.id
       txn.update!(reconciliation_status: 'uncleared', reconciliation_id: nil)
@@ -78,7 +78,7 @@ class ReconciliationService
         changes: { cleared_count: recon.cleared_transactions.count }
       )
 
-      { success: true, message: "Reconciliation complete! #{recon.transactions.count} transactions reconciled." }
+      { success: true, message: "Reconciliation complete! #{recon.account_transactions.count} transactions reconciled." }
     else
       { success: false, difference: recon.difference, message: "Difference of $#{recon.difference.abs}. Please review." }
     end
@@ -89,7 +89,7 @@ class ReconciliationService
     recon = @company.reconciliations.find(reconciliation_id)
     target = recon.statement_balance
 
-    uncleared = recon.account.transactions
+    uncleared = recon.account.account_transactions
       .where('date <= ?', recon.statement_date)
       .where(reconciliation_status: 'uncleared')
       .order(date: :asc)

@@ -7,7 +7,7 @@ module Api
 
       # GET /api/v1/companies/:company_id/transactions
       def index
-        transactions = @company.transactions
+        transactions = @company.account_transactions
           .includes(:account, :chart_of_account)
           .order(date: :desc, created_at: :desc)
 
@@ -65,7 +65,7 @@ module Api
       # POST /api/v1/companies/:company_id/transactions
       def create
         account = @company.accounts.find(params[:transaction][:account_id])
-        transaction = account.transactions.build(transaction_params)
+        transaction = account.account_transactions.build(transaction_params)
         if transaction.save
           render json: serialize(transaction), status: :created
         else
@@ -75,7 +75,7 @@ module Api
 
       # PUT /api/v1/companies/:company_id/transactions/:id
       def update
-        transaction = @company.transactions.find(params[:id])
+        transaction = @company.account_transactions.find(params[:id])
         if transaction.update(transaction_params)
           render json: serialize(transaction)
         else
@@ -85,7 +85,7 @@ module Api
 
       # DELETE /api/v1/companies/:company_id/transactions/:id
       def destroy
-        transaction = @company.transactions.find(params[:id])
+        transaction = @company.account_transactions.find(params[:id])
         transaction.destroy
         render json: { message: 'Transaction deleted' }
       end
@@ -96,7 +96,7 @@ module Api
         ids = params[:transaction_ids] || []
         chart_of_account_id = params[:chart_of_account_id]
 
-        updated = @company.transactions
+        updated = @company.account_transactions
           .where(id: ids)
           .update_all(chart_of_account_id: chart_of_account_id)
 

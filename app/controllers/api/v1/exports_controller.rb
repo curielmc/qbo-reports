@@ -10,7 +10,7 @@ module Api
         start_date = params[:start_date] || Date.current.beginning_of_year
         end_date = params[:end_date] || Date.current
 
-        transactions = @company.transactions
+        transactions = @company.account_transactions
           .includes(:account, :chart_of_account)
           .where(date: start_date..end_date)
           .order(date: :desc)
@@ -49,7 +49,7 @@ module Api
           csv << ['INCOME']
           income_total = 0
           @company.chart_of_accounts.income.active.each do |coa|
-            amount = coa.transactions.where(date: start_date..end_date, pending: false).sum(:amount).abs
+            amount = coa.account_transactions.where(date: start_date..end_date, pending: false).sum(:amount).abs
             next if amount.zero?
             csv << [coa.name, amount]
             income_total += amount
@@ -61,7 +61,7 @@ module Api
           csv << ['EXPENSES']
           expense_total = 0
           @company.chart_of_accounts.expense.active.each do |coa|
-            amount = coa.transactions.where(date: start_date..end_date, pending: false).sum(:amount).abs
+            amount = coa.account_transactions.where(date: start_date..end_date, pending: false).sum(:amount).abs
             next if amount.zero?
             csv << [coa.name, amount]
             expense_total += amount
@@ -89,7 +89,7 @@ module Api
             csv << [type.upcase.pluralize]
             total = 0
             @company.chart_of_accounts.where(account_type: type).active.each do |coa|
-              balance = coa.transactions.where('date <= ?', as_of).sum(:amount)
+              balance = coa.account_transactions.where('date <= ?', as_of).sum(:amount)
               balance = balance.abs if type == 'liability'
               next if balance.zero?
               csv << [coa.name, balance]
@@ -110,7 +110,7 @@ module Api
         csv_data = CSV.generate do |csv|
           csv << ['Code', 'Name', 'Type', 'Active', 'Transactions Count']
           @company.chart_of_accounts.order(:account_type, :code).each do |coa|
-            csv << [coa.code, coa.name, coa.account_type, coa.active, coa.transactions.count]
+            csv << [coa.code, coa.name, coa.account_type, coa.active, coa.account_transactions.count]
           end
         end
 

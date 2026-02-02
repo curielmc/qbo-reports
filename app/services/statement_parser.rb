@@ -31,13 +31,13 @@ class StatementParser
 
     transactions.each do |txn_data|
       # Skip duplicates (same date + amount + description)
-      next if account.transactions.exists?(
+      next if account.account_transactions.exists?(
         date: txn_data['date'],
         amount: txn_data['amount'],
         description: txn_data['description']
       )
 
-      txn = account.transactions.create!(
+      txn = account.account_transactions.create!(
         date: txn_data['date'],
         description: txn_data['description'],
         amount: txn_data['amount'],

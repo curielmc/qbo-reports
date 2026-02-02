@@ -1,7 +1,7 @@
 class Account < ApplicationRecord
   belongs_to :company
   belongs_to :plaid_item, optional: true
-  has_many :transactions, dependent: :destroy
+  has_many :account_transactions, dependent: :destroy
 
   enum account_type: {
     checking: 'checking',

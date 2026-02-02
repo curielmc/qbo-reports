@@ -2,13 +2,13 @@ class Reconciliation < ApplicationRecord
   belongs_to :company
   belongs_to :account
   belongs_to :user
-  has_many :transactions
+  has_many :account_transactions
 
   scope :in_progress, -> { where(status: 'in_progress') }
   scope :completed, -> { where(status: 'completed') }
 
   def cleared_transactions
-    account.transactions
+    account.account_transactions
       .where(reconciliation_id: id)
       .where(reconciliation_status: 'cleared')
   end

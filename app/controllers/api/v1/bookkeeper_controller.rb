@@ -87,12 +87,12 @@ module Api
           coa = company.chart_of_accounts.find_by(id: coa_id)
           next unless coa
 
-          company.transactions.where(id: txn_ids).update_all(chart_of_account_id: coa.id)
+          company.account_transactions.where(id: txn_ids).update_all(chart_of_account_id: coa.id)
           applied += txn_ids.size
 
           # Create journal entries for newly categorized
           txn_ids.each do |tid|
-            txn = company.transactions.find_by(id: tid)
+            txn = company.account_transactions.find_by(id: tid)
             next unless txn
             BookkeeperAi.new(company, current_user).send(:create_journal_entry, txn) rescue nil
           end

@@ -10,11 +10,11 @@ module Api
 
         # Overall stats
         total_accounts = Account.where(company: companies).active.count
-        total_transactions = Transaction.joins(:account).where(accounts: { company_id: companies.pluck(:id) }).count
+        total_transactions = AccountTransaction.joins(:account).where(accounts: { company_id: companies.pluck(:id) }).count
 
         # YTD income/expense
         ytd_start = Date.current.beginning_of_year
-        ytd_transactions = Transaction.joins(:account, :chart_of_account)
+        ytd_transactions = AccountTransaction.joins(:account, :chart_of_account)
           .where(accounts: { company_id: companies.pluck(:id) })
           .where(date: ytd_start..Date.current)
           .where(pending: false)
@@ -37,14 +37,14 @@ module Api
           .sum(:current_balance).abs
 
         # Recent transactions
-        recent = Transaction.joins(:account)
+        recent = AccountTransaction.joins(:account)
           .includes(:account, :chart_of_account)
           .where(accounts: { company_id: companies.pluck(:id) })
           .order(date: :desc)
           .limit(10)
 
         # Uncategorized count
-        uncategorized = Transaction.joins(:account)
+        uncategorized = AccountTransaction.joins(:account)
           .where(accounts: { company_id: companies.pluck(:id) })
           .where(chart_of_account_id: nil)
           .count
@@ -53,7 +53,7 @@ module Api
         monthly_spending = (0..5).map do |i|
           month_start = i.months.ago.beginning_of_month
           month_end = i.months.ago.end_of_month
-          total = Transaction.joins(:account, :chart_of_account)
+          total = AccountTransaction.joins(:account, :chart_of_account)
             .where(accounts: { company_id: companies.pluck(:id) })
             .where(chart_of_accounts: { account_type: 'expense' })
             .where(date: month_start..month_end)

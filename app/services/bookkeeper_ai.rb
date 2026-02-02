@@ -206,11 +206,11 @@ class BookkeeperAi
   def company_context
     accounts = @company.accounts.active.pluck(:name, :account_type, :current_balance, :mask)
     categories = @company.chart_of_accounts.active.pluck(:name, :account_type)
-    uncategorized_count = @company.transactions.where(chart_of_account_id: nil).count
+    uncategorized_count = @company.account_transactions.where(chart_of_account_id: nil).count
     rules_count = @company.categorization_rules.active.count
-    pending_count = @company.transactions.pending.count
+    pending_count = @company.account_transactions.pending.count
 
-    recent_uncategorized = @company.transactions
+    recent_uncategorized = @company.account_transactions
       .where(chart_of_account_id: nil)
       .order(date: :desc)
       .limit(15)
@@ -323,7 +323,7 @@ class BookkeeperAi
     coa = find_category(category_name)
     return { error: "Category '#{category_name}' not found. Available: #{available_categories}" } unless coa
 
-    txns = @company.transactions
+    txns = @company.account_transactions
       .where(chart_of_account_id: nil)
       .where('LOWER(description) LIKE ? OR LOWER(merchant_name) LIKE ?', "%#{match_text}%", "%#{match_text}%")
 
@@ -345,7 +345,7 @@ class BookkeeperAi
     return { error: "Category '#{category_name}' not found" } unless coa
 
     count = 0
-    @company.transactions.where(id: ids).find_each do |t|
+    @company.account_transactions.where(id: ids).find_each do |t|
       t.update!(chart_of_account_id: coa.id)
       count += 1
     end
@@ -354,7 +354,7 @@ class BookkeeperAi
   end
 
   def suggest_categories
-    uncategorized = @company.transactions
+    uncategorized = @company.account_transactions
       .where(chart_of_account_id: nil)
       .order(date: :desc)
       .limit(20)
@@ -395,13 +395,13 @@ class BookkeeperAi
 
   def show_uncategorized(params)
     limit = (params['limit'] || 20).to_i
-    txns = @company.transactions.includes(:account)
+    txns = @company.account_transactions.includes(:account)
       .where(chart_of_account_id: nil)
       .order(date: :desc)
       .limit(limit)
       .map { |t| { id: t.id, date: t.date, description: t.description, amount: t.amount, account: t.account&.name, merchant: t.merchant_name } }
 
-    total = @company.transactions.where(chart_of_account_id: nil).count
+    total = @company.account_transactions.where(chart_of_account_id: nil).count
     { action: 'uncategorized', showing: txns.size, total: total, transactions: txns }
   end
 
@@ -414,11 +414,11 @@ class BookkeeperAi
     return { error: "Account '#{params['account_name']}' not found" } unless account
 
     bank_balance = account.current_balance
-    book_balance = account.transactions.cleared.sum(:amount)
-    pending_total = account.transactions.pending.sum(:amount)
+    book_balance = account.account_transactions.cleared.sum(:amount)
+    pending_total = account.account_transactions.pending.sum(:amount)
     difference = bank_balance - book_balance
 
-    uncleared = account.transactions.where(pending: false)
+    uncleared = account.account_transactions.where(pending: false)
       .where('created_at > ?', 30.days.ago)
       .order(date: :desc)
       .limit(10)
@@ -440,7 +440,7 @@ class BookkeeperAi
     account = find_account(params['account_name'])
     return { error: "Account not found" } unless account
 
-    pending = account.transactions.pending.order(date: :desc)
+    pending = account.account_transactions.pending.order(date: :desc)
       .map { |t| { id: t.id, date: t.date, description: t.description, amount: t.amount } }
 
     { action: 'pending', account: account.name, count: pending.size, transactions: pending }
@@ -448,14 +448,14 @@ class BookkeeperAi
 
   def mark_cleared(params)
     ids = params['transaction_ids'] || []
-    count = @company.transactions.where(id: ids).update_all(pending: false)
+    count = @company.account_transactions.where(id: ids).update_all(pending: false)
     { action: 'mark_cleared', cleared: count }
   end
 
   def find_duplicates
     # Find transactions with same amount, date, and similar description
     dupes = []
-    @company.transactions.where(date: 90.days.ago..Date.current).group_by { |t| [t.date, t.amount.round(2)] }.each do |key, txns|
+    @company.account_transactions.where(date: 90.days.ago..Date.current).group_by { |t| [t.date, t.amount.round(2)] }.each do |key, txns|
       next if txns.size < 2
       dupes << {
         date: key[0],
@@ -509,10 +509,10 @@ class BookkeeperAi
     return { error: "Target category not found" } unless to
 
     # Move all transactions
-    moved = from.transactions.update_all(chart_of_account_id: to.id)
+    moved = from.account_transactions.update_all(chart_of_account_id: to.id)
     # Rebuild journal entries for moved transactions
-    to.transactions.find_each { |t| JournalEntry.from_transaction(t) }
-    from.destroy if from.transactions.empty?
+    to.account_transactions.find_each { |t| JournalEntry.from_transaction(t) }
+    from.destroy if from.account_transactions.empty?
 
     { action: 'merge_categories', from: params['from_name'], to: params['to_name'], moved: moved }
   end
@@ -604,7 +604,7 @@ class BookkeeperAi
     query = params['query'] || ''
     limit = (params['limit'] || 20).to_i.clamp(1, 50)
 
-    txns = @company.transactions.includes(:account, :chart_of_account)
+    txns = @company.account_transactions.includes(:account, :chart_of_account)
       .where('description ILIKE ? OR merchant_name ILIKE ?', "%#{query}%", "%#{query}%")
       .order(date: :desc)
 
@@ -623,7 +623,7 @@ class BookkeeperAi
     end_date = params['end_date'] || Date.current
     limit = (params['limit'] || 10).to_i
 
-    vendors = @company.transactions
+    vendors = @company.account_transactions
       .where.not(merchant_name: [nil, ''])
       .where(date: start_date..end_date, pending: false)
       .group(:merchant_name)
@@ -1012,7 +1012,7 @@ class BookkeeperAi
 
   def match_receipt(params)
     receipt = @company.receipts.find(params['receipt_id'])
-    txn = @company.transactions.find(params['transaction_id'])
+    txn = @company.account_transactions.find(params['transaction_id'])
     receipt.match_to!(txn)
     { action: 'match_receipt', receipt_id: receipt.id, transaction_id: txn.id, status: 'matched' }
   end

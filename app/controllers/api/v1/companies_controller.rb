@@ -12,7 +12,7 @@ module Api
             id: h.id,
             name: h.name,
             accounts_count: h.accounts.count,
-            transactions_count: h.transactions.count,
+            transactions_count: h.account_transactions.count,
             created_at: h.created_at
           }
         }

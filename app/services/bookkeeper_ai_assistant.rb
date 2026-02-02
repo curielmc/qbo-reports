@@ -17,8 +17,8 @@ class BookkeeperAiAssistant
         score: score[:score],
         grade: score[:grade],
         issues: score[:issues],
-        last_transaction_date: company.transactions.maximum(:date),
-        uncategorized: company.transactions.where(chart_of_account_id: nil).count,
+        last_transaction_date: company.account_transactions.maximum(:date),
+        uncategorized: company.account_transactions.where(chart_of_account_id: nil).count,
         unreconciled_accounts: unreconciled_count(company),
         unmatched_receipts: company.receipts.unmatched.count
       }
@@ -54,7 +54,7 @@ class BookkeeperAiAssistant
 
     # 1. Unusually large transactions (>3x average for that category)
     company.chart_of_accounts.active.each do |coa|
-      txns = coa.transactions.where(date: 90.days.ago..Date.current)
+      txns = coa.account_transactions.where(date: 90.days.ago..Date.current)
       next if txns.count < 5
 
       avg = txns.average(:amount).to_f.abs
@@ -74,7 +74,7 @@ class BookkeeperAiAssistant
     end
 
     # 2. Duplicate transactions (same amount + date + similar description)
-    recent = company.transactions.where(date: 30.days.ago..Date.current).order(:date, :amount)
+    recent = company.account_transactions.where(date: 30.days.ago..Date.current).order(:date, :amount)
     recent.each_cons(2) do |a, b|
       if a.date == b.date && a.amount == b.amount && a.id != b.id
         desc_sim = (a.description&.downcase || '') == (b.description&.downcase || '') ||
@@ -107,7 +107,7 @@ class BookkeeperAiAssistant
     end
 
     # 4. Round number expenses (potential estimates needing receipts)
-    company.transactions.where(date: 30.days.ago..Date.current)
+    company.account_transactions.where(date: 30.days.ago..Date.current)
       .where('amount < 0 AND amount = ROUND(amount, 0) AND ABS(amount) > 100')
       .each do |txn|
         anomalies << {
@@ -128,7 +128,7 @@ class BookkeeperAiAssistant
 
   # For bookkeepers: batch categorize across clients using AI
   def smart_categorize(company)
-    uncategorized = company.transactions
+    uncategorized = company.account_transactions
       .where(chart_of_account_id: nil)
       .order(date: :desc)
       .limit(100)
@@ -141,7 +141,7 @@ class BookkeeperAiAssistant
     suggestions = []
     by_merchant.each do |merchant, txns|
       # Check if we've categorized this merchant before
-      past = company.transactions
+      past = company.account_transactions
         .where('LOWER(merchant_name) = ? OR LOWER(description) = ?', merchant, merchant)
         .where.not(chart_of_account_id: nil)
         .limit(1)
@@ -176,7 +176,7 @@ class BookkeeperAiAssistant
   # ============================================
 
   def vendor_summary(company)
-    company.transactions
+    company.account_transactions
       .where(date: 90.days.ago..Date.current)
       .where.not(merchant_name: [nil, ''])
       .group(:merchant_name)
@@ -211,8 +211,8 @@ class BookkeeperAiAssistant
     score = 100
 
     # Uncategorized transactions
-    uncategorized = company.transactions.where(chart_of_account_id: nil).count
-    total = company.transactions.count
+    uncategorized = company.account_transactions.where(chart_of_account_id: nil).count
+    total = company.account_transactions.count
     if total > 0
       pct = (uncategorized.to_f / total * 100).round(0)
       if pct > 30
@@ -228,7 +228,7 @@ class BookkeeperAiAssistant
     end
 
     # Stale data (no recent transactions)
-    last_txn = company.transactions.maximum(:date)
+    last_txn = company.account_transactions.maximum(:date)
     if last_txn
       days_stale = (Date.current - last_txn).to_i
       if days_stale > 30
@@ -276,7 +276,7 @@ class BookkeeperAiAssistant
   end
 
   def generate_categorization_tasks(company)
-    count = company.transactions.where(chart_of_account_id: nil).count
+    count = company.account_transactions.where(chart_of_account_id: nil).count
     return 0 if count == 0
 
     existing = company.bookkeeper_tasks.open_tasks.where(task_type: 'categorize').exists?
@@ -364,7 +364,7 @@ class BookkeeperAiAssistant
   end
 
   def generate_bank_health_tasks(company)
-    last_txn = company.transactions.maximum(:date)
+    last_txn = company.account_transactions.maximum(:date)
     return 0 unless last_txn
     days = (Date.current - last_txn).to_i
     return 0 if days < 14
@@ -411,7 +411,7 @@ class BookkeeperAiAssistant
 
   def find_regular_transactions(company)
     # Find merchants that appear regularly (at least 3 times in 90 days)
-    regulars = company.transactions
+    regulars = company.account_transactions
       .where(date: 90.days.ago..Date.current)
       .where.not(merchant_name: [nil, ''])
       .group(:merchant_name)
@@ -419,7 +419,7 @@ class BookkeeperAiAssistant
       .pluck(:merchant_name)
 
     regulars.map do |merchant|
-      txns = company.transactions
+      txns = company.account_transactions
         .where(merchant_name: merchant)
         .where(date: 90.days.ago..Date.current)
         .order(date: :asc)

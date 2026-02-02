@@ -35,7 +35,7 @@ module Api
       # GET /api/v1/companies/:company_id/reconciliations/:id
       def show
         recon = @company.reconciliations.find(params[:id])
-        uncleared = recon.account.transactions
+        uncleared = recon.account.account_transactions
           .where('date <= ?', recon.statement_date)
           .where(reconciliation_status: ['uncleared', 'cleared'])
           .where('reconciliation_id IS NULL OR reconciliation_id = ?', recon.id)

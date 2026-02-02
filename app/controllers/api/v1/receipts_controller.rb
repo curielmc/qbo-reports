@@ -42,7 +42,7 @@ module Api
 
         render json: {
           receipt: format_receipt(receipt),
-          matched_transaction: receipt.transaction ? format_transaction(receipt.transaction) : nil
+          matched_transaction: receipt.account_transaction ? format_transaction(receipt.account_transaction) : nil
         }
       end
 
@@ -57,7 +57,7 @@ module Api
       # PATCH /api/v1/companies/:company_id/receipts/:id/match
       def match
         receipt = @company.receipts.find(params[:id])
-        transaction = @company.transactions.find(params[:transaction_id])
+        transaction = @company.account_transactions.find(params[:transaction_id])
 
         receipt.match_to!(transaction)
 

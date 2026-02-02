@@ -18,11 +18,11 @@ class AnomalyDetector
   # Transactions much larger than usual for that vendor
   def unusual_amounts
     alerts = []
-    recent = @company.transactions.where(date: 7.days.ago..Date.current, pending: false)
+    recent = @company.account_transactions.where(date: 7.days.ago..Date.current, pending: false)
       .where.not(merchant_name: [nil, ''])
 
     recent.each do |txn|
-      history = @company.transactions
+      history = @company.account_transactions
         .where(merchant_name: txn.merchant_name)
         .where.not(id: txn.id)
         .where(pending: false)
@@ -54,13 +54,13 @@ class AnomalyDetector
     current_month_start = Date.current.beginning_of_month
 
     @company.chart_of_accounts.expense.active.each do |coa|
-      current = coa.transactions.where(date: current_month_start..Date.current, pending: false).sum(:amount).abs
+      current = coa.account_transactions.where(date: current_month_start..Date.current, pending: false).sum(:amount).abs
 
       # Average of previous 3 months
       monthly_avgs = (1..3).map do |i|
         ms = i.months.ago.beginning_of_month
         me = i.months.ago.end_of_month
-        coa.transactions.where(date: ms..me, pending: false).sum(:amount).abs
+        coa.account_transactions.where(date: ms..me, pending: false).sum(:amount).abs
       end
 
       avg = monthly_avgs.sum / 3.0
@@ -89,13 +89,13 @@ class AnomalyDetector
 
   # New vendors in the last 7 days
   def new_vendors
-    recent_merchants = @company.transactions
+    recent_merchants = @company.account_transactions
       .where(date: 7.days.ago..Date.current)
       .where.not(merchant_name: [nil, ''])
       .distinct.pluck(:merchant_name)
 
     new_ones = recent_merchants.select do |merchant|
-      !@company.transactions
+      !@company.account_transactions
         .where(merchant_name: merchant)
         .where('date < ?', 7.days.ago)
         .exists?
@@ -113,7 +113,7 @@ class AnomalyDetector
 
   # Uncategorized transactions piling up
   def uncategorized_alert
-    count = @company.transactions.where(chart_of_account_id: nil).count
+    count = @company.account_transactions.where(chart_of_account_id: nil).count
     return [] if count < 10
 
     [{

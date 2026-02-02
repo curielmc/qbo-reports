@@ -1,6 +1,6 @@
 class JournalEntry < ApplicationRecord
   belongs_to :company
-  belongs_to :transaction, optional: true
+  belongs_to :account_transaction, foreign_key: 'transaction_id', optional: true
   has_many :journal_lines, dependent: :destroy
 
   validates :entry_date, presence: true
@@ -40,7 +40,7 @@ class JournalEntry < ApplicationRecord
     amount = transaction.amount.abs
     category_coa = transaction.chart_of_account
 
-    entry = company.journal_entries.find_or_initialize_by(transaction: transaction)
+    entry = company.journal_entries.find_or_initialize_by(account_transaction: transaction)
     entry.entry_date = transaction.date
     entry.memo = transaction.description
     entry.source = transaction.plaid_transaction_id? ? 'plaid' : 'manual'
@@ -66,7 +66,7 @@ class JournalEntry < ApplicationRecord
 
   # Remove journal entry when transaction is uncategorized
   def self.remove_for_transaction(transaction)
-    JournalEntry.where(transaction: transaction).destroy_all
+    JournalEntry.where(account_transaction: transaction).destroy_all
   end
 
   # Transfer between accounts (e.g., checking → savings)

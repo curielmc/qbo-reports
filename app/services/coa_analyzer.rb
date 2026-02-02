@@ -13,7 +13,7 @@ class CoaAnalyzer
 
   # Look at uncategorized transactions and suggest new COA entries
   def suggest_from_transactions
-    uncategorized = @company.transactions.where(chart_of_account_id: nil)
+    uncategorized = @company.account_transactions.where(chart_of_account_id: nil)
       .where.not(merchant_name: [nil, ''])
       .group(:merchant_name)
       .select('merchant_name, COUNT(*) as cnt, SUM(amount) as total')
@@ -164,8 +164,8 @@ class CoaAnalyzer
     # Check for Miscellaneous overuse
     misc = @company.chart_of_accounts.find_by('LOWER(name) LIKE ?', '%miscellaneous%')
     if misc
-      misc_count = misc.transactions.where(date: 90.days.ago..Date.current).count
-      total_count = @company.transactions.where(date: 90.days.ago..Date.current).count
+      misc_count = misc.account_transactions.where(date: 90.days.ago..Date.current).count
+      total_count = @company.account_transactions.where(date: 90.days.ago..Date.current).count
       if total_count > 0 && (misc_count.to_f / total_count) > 0.15
         issues << {
           type: 'misc_overuse',
@@ -177,7 +177,7 @@ class CoaAnalyzer
 
     # Check for categories with 0 transactions (stale)
     stale = @company.chart_of_accounts.active.select { |coa|
-      coa.transactions.where(date: 365.days.ago..Date.current).count == 0
+      coa.account_transactions.where(date: 365.days.ago..Date.current).count == 0
     }
     if stale.size > 5
       issues << {
@@ -188,8 +188,8 @@ class CoaAnalyzer
     end
 
     # Check for uncategorized pile-up
-    uncategorized = @company.transactions.where(chart_of_account_id: nil).count
-    total = @company.transactions.count
+    uncategorized = @company.account_transactions.where(chart_of_account_id: nil).count
+    total = @company.account_transactions.count
     if total > 0 && uncategorized > 0
       pct = (uncategorized.to_f / total * 100).round(0)
       if pct > 20

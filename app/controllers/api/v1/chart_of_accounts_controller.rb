@@ -34,7 +34,7 @@ module Api
       # DELETE /api/v1/companies/:company_id/chart_of_accounts/:id
       def destroy
         coa = @company.chart_of_accounts.find(params[:id])
-        if coa.transactions.exists?
+        if coa.account_transactions.exists?
           render json: { error: 'Cannot delete account with transactions. Deactivate it instead.' }, status: :unprocessable_entity
         else
           coa.destroy
@@ -60,7 +60,7 @@ module Api
           account_type: c.account_type,
           parent_id: c.parent_id,
           active: c.active,
-          transactions_count: c.transactions.count,
+          transactions_count: c.account_transactions.count,
           created_at: c.created_at
         }
       end
