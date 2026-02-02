@@ -113,11 +113,18 @@ Rails.application.routes.draw do
         get 'usage/history', to: 'usage#history'
 
         # Data import
-        scope :imports do
-          post 'upload', to: 'imports#upload'
-          post 'commit', to: 'imports#commit'
-          get 'supported', to: 'imports#supported'
-        end
+        post 'imports/upload', to: 'imports#upload'
+        post 'imports/commit', to: 'imports#commit'
+        get 'imports/supported', to: 'imports#supported'
+        post 'imports/suggest_category', to: 'imports#suggest_category'
+
+        # Box.com integration
+        get 'box/config', to: 'box#config'
+        put 'box/config', to: 'box#update_config'
+        post 'box/sync', to: 'box#sync'
+        get 'box/sync_status', to: 'box#sync_status'
+        get 'box/files', to: 'box#files'
+        get 'box/embed_url/:file_id', to: 'box#embed_url'
 
         # Statement uploads
         resources :statements, only: [:index] do

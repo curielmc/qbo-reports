@@ -35,6 +35,9 @@ gem 'sidekiq'
 # Pagination
 gem 'kaminari'
 
+# Box.com integration
+gem 'boxr'
+
 group :development, :test do
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
   gem 'dotenv-rails'

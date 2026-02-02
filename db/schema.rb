@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_02_01_000025) do
+ActiveRecord::Schema.define(version: 2026_02_02_220004) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -106,6 +106,41 @@ ActiveRecord::Schema.define(version: 2026_02_01_000025) do
     t.index ["priority", "status"], name: "index_bookkeeper_tasks_on_priority_and_status"
   end
 
+  create_table "box_imported_files", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "box_file_id", null: false
+    t.string "filename"
+    t.string "box_folder_path"
+    t.bigint "statement_upload_id"
+    t.string "status", default: "imported"
+    t.text "error_message"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["company_id", "box_file_id"], name: "index_box_imported_files_on_company_id_and_box_file_id", unique: true
+    t.index ["company_id"], name: "index_box_imported_files_on_company_id"
+    t.index ["statement_upload_id"], name: "index_box_imported_files_on_statement_upload_id"
+  end
+
+  create_table "box_sync_jobs", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "user_id", null: false
+    t.string "status", default: "pending"
+    t.integer "total_files", default: 0
+    t.integer "processed_files", default: 0
+    t.integer "imported_files", default: 0
+    t.integer "skipped_files", default: 0
+    t.integer "failed_files", default: 0
+    t.text "current_file"
+    t.text "error_message"
+    t.jsonb "details", default: {}
+    t.datetime "started_at"
+    t.datetime "completed_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["company_id"], name: "index_box_sync_jobs_on_company_id"
+    t.index ["user_id"], name: "index_box_sync_jobs_on_user_id"
+  end
+
   create_table "categorization_rules", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.bigint "chart_of_account_id", null: false
@@ -164,6 +199,9 @@ ActiveRecord::Schema.define(version: 2026_02_01_000025) do
     t.boolean "billing_active", default: true
     t.string "clockify_project_id"
     t.string "clockify_client_id"
+    t.string "box_folder_url"
+    t.string "box_developer_token"
+    t.string "box_folder_id"
     t.index ["external_id"], name: "index_companies_on_external_id", unique: true
   end
 
@@ -376,8 +414,10 @@ ActiveRecord::Schema.define(version: 2026_02_01_000025) do
     t.string "source", default: "web", null: false
     t.string "parser_engine"
     t.bigint "api_key_id"
+    t.string "file_hash"
     t.index ["account_id"], name: "index_statement_uploads_on_account_id"
     t.index ["api_key_id"], name: "index_statement_uploads_on_api_key_id"
+    t.index ["company_id", "file_hash"], name: "index_statement_uploads_on_company_id_and_file_hash"
     t.index ["company_id"], name: "index_statement_uploads_on_company_id"
     t.index ["user_id"], name: "index_statement_uploads_on_user_id"
   end
@@ -425,6 +465,7 @@ ActiveRecord::Schema.define(version: 2026_02_01_000025) do
     t.datetime "remember_created_at"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
+    t.datetime "last_sign_in_at"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
     t.index ["role"], name: "index_users_on_role"
@@ -440,6 +481,10 @@ ActiveRecord::Schema.define(version: 2026_02_01_000025) do
   add_foreign_key "audit_logs", "users"
   add_foreign_key "bookkeeper_tasks", "companies"
   add_foreign_key "bookkeeper_tasks", "users", column: "assigned_to_id"
+  add_foreign_key "box_imported_files", "companies"
+  add_foreign_key "box_imported_files", "statement_uploads"
+  add_foreign_key "box_sync_jobs", "companies"
+  add_foreign_key "box_sync_jobs", "users"
   add_foreign_key "categorization_rules", "chart_of_accounts"
   add_foreign_key "categorization_rules", "companies"
   add_foreign_key "chart_of_accounts", "companies"

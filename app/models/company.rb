@@ -25,6 +25,8 @@ class Company < ApplicationRecord
   has_many :recurring_entries, dependent: :destroy
   has_many :journal_templates, dependent: :destroy
   has_many :api_keys, dependent: :destroy
+  has_many :box_imported_files, dependent: :destroy
+  has_many :box_sync_jobs, dependent: :destroy
 
   validates :name, presence: true
 
