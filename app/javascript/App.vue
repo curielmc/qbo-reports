@@ -53,7 +53,7 @@
             </div>
             <div class="flex-none flex items-center gap-2">
               <!-- Company switcher -->
-              <select v-if="companies.length > 1" v-model="currentCompanyId" @change="switchCompany"
+              <select v-if="companies.length > 0" v-model="currentCompanyId" @change="switchCompany"
                 class="select select-bordered select-sm max-w-xs">
                 <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
               </select>
@@ -91,7 +91,7 @@
             </div>
 
             <!-- Company switcher (mobile) -->
-            <div v-if="companies.length > 1" class="p-3 border-b lg:hidden">
+            <div v-if="companies.length > 0" class="p-3 border-b lg:hidden">
               <select v-model="currentCompanyId" @change="switchCompany"
                 class="select select-bordered select-sm w-full">
                 <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
@@ -198,7 +198,7 @@ const appStore = useAppStore()
 const drawerOpen = ref(false)
 const showNotifications = ref(false)
 const unreadCount = ref(0)
-const currentCompanyId = ref(null)
+const currentCompanyId = ref(appStore.activeCompany?.id || null)
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)

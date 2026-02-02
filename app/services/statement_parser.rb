@@ -219,25 +219,25 @@ class StatementParser
   # ============================================
 
   def parse_pdf_with_ai(content, filename)
-    # Chain: Kimi K2.5 (default) → Claude (native PDF) → OpenAI+pdftotext (fallback)
+    # Chain: Claude (native PDF) → Kimi K2.5 (pdftotext) → OpenAI+pdftotext (fallback)
 
-    # 1. Try Kimi K2.5 via OpenRouter
-    if openrouter_api_key.present?
-      result = parse_pdf_with_kimi(content, filename)
-      return result if result[:success]
-      Rails.logger.warn "StatementParser: Kimi PDF parsing failed, trying Claude"
-    end
-
-    # 2. Try Claude (native PDF reading, no pdftotext needed)
+    # 1. Try Claude (native PDF reading, no pdftotext needed)
     if anthropic_api_key.present?
       result = parse_pdf_with_claude(content, filename)
       return result if result[:success]
-      Rails.logger.warn "StatementParser: Claude PDF parsing failed, falling back to OpenAI+pdftotext"
+      Rails.logger.warn "StatementParser: Claude PDF parsing failed, trying Kimi"
+    end
+
+    # 2. Try Kimi K2.5 via OpenRouter (needs pdftotext)
+    if openrouter_api_key.present?
+      result = parse_pdf_with_kimi(content, filename)
+      return result if result[:success]
+      Rails.logger.warn "StatementParser: Kimi PDF parsing failed, falling back to OpenAI+pdftotext"
     end
 
     # 3. Fallback: extract text with pdftotext, then use OpenAI
     text = extract_pdf_text(content)
-    return { success: false, error: 'Could not extract text from PDF. Configure OPENROUTER_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY.' } if text.blank?
+    return { success: false, error: 'Could not extract text from PDF. Configure ANTHROPIC_API_KEY, OPENROUTER_API_KEY, or OPENAI_API_KEY.' } if text.blank?
 
     ai_parse_statement(text, filename)
   end
@@ -383,6 +383,9 @@ class StatementParser
     uri = URI('https://api.anthropic.com/v1/messages')
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
+    store = OpenSSL::X509::Store.new
+    store.set_default_paths
+    http.cert_store = store
     http.read_timeout = 120
 
     body = {
@@ -565,13 +568,18 @@ class StatementParser
   end
 
   def call_ai(prompt)
+    # Prefer Kimi K2.5 via OpenRouter, fall back to OpenAI
+    if openrouter_api_key.present?
+      return call_kimi(prompt)
+    end
+
     api_key = Rails.application.credentials.dig(:openai, :api_key) || ENV['OPENAI_API_KEY']
     return '{"error": "AI not configured"}' unless api_key
 
     uri = URI('https://api.openai.com/v1/chat/completions')
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
-    http.read_timeout = 60  # Longer timeout for parsing
+    http.read_timeout = 60
 
     body = {
       model: 'gpt-4o-mini',
@@ -593,6 +601,38 @@ class StatementParser
     JSON.parse(response.body).dig('choices', 0, 'message', 'content') || '{}'
   rescue => e
     Rails.logger.error "StatementParser AI error: #{e.message}"
+    '{}'
+  end
+
+  def call_kimi(prompt)
+    uri = URI('https://openrouter.ai/api/v1/chat/completions')
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+    http.read_timeout = 120
+
+    body = {
+      model: 'moonshotai/kimi-k2.5',
+      messages: [
+        { role: 'system', content: 'You are a financial document parser. Extract transactions accurately. Return ONLY valid JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.1,
+      max_tokens: 8000
+    }
+
+    request = Net::HTTP::Post.new(uri)
+    request['Authorization'] = "Bearer #{openrouter_api_key}"
+    request['Content-Type'] = 'application/json'
+    request['HTTP-Referer'] = 'https://myecfo.com'
+    request['X-Title'] = 'MYeCFO Statement Parser'
+    request.body = body.to_json
+
+    response = http.request(request)
+    raw = JSON.parse(response.body).dig('choices', 0, 'message', 'content') || '{}'
+    # Extract JSON if wrapped in markdown code blocks
+    raw[/\{.*\}/m] || raw[/\[.*\]/m] || raw
+  rescue => e
+    Rails.logger.error "StatementParser Kimi AI error: #{e.message}"
     '{}'
   end
 end
