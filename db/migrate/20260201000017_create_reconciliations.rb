@@ -18,7 +18,7 @@ class CreateReconciliations < ActiveRecord::Migration[6.1]
     # uncleared → cleared → reconciled
     add_reference :transactions, :reconciliation, foreign_key: true, null: true
 
-    add_index :reconciliations, [:company_id, :account_id, :statement_date]
+    add_index :reconciliations, [:company_id, :account_id, :statement_date], name: 'idx_reconciliations_company_account_date'
     add_index :transactions, :reconciliation_status
   end
 end

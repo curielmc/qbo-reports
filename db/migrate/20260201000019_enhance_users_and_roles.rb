@@ -1,17 +1,21 @@
 class EnhanceUsersAndRoles < ActiveRecord::Migration[6.1]
   def change
-    # Invitation system
-    create_table :invitations do |t|
-      t.references :company, null: false, foreign_key: true
-      t.references :invited_by, null: false, foreign_key: { to_table: :users }
-      t.string :email, null: false
-      t.string :role, default: 'viewer' # owner, bookkeeper, editor, viewer
-      t.string :token, null: false
-      t.string :status, default: 'pending' # pending, accepted, expired, revoked
-      t.datetime :accepted_at
-      t.datetime :expires_at
-      t.timestamps
+    # Invitation system (skip if already created by migration 000009)
+    unless table_exists?(:invitations)
+      create_table :invitations do |t|
+        t.references :company, null: false, foreign_key: true
+        t.references :invited_by, null: false, foreign_key: { to_table: :users }
+        t.string :email, null: false
+        t.string :role, default: 'viewer' # owner, bookkeeper, editor, viewer
+        t.string :token, null: false
+        t.string :status, default: 'pending' # pending, accepted, expired, revoked
+        t.datetime :accepted_at
+        t.datetime :expires_at
+        t.timestamps
+      end
     end
+    # Add columns from this migration that may be missing from the earlier invitations table
+    add_column :invitations, :status, :string, default: 'pending' unless column_exists?(:invitations, :status)
 
     # Audit trail
     create_table :audit_logs do |t|
@@ -37,8 +41,8 @@ class EnhanceUsersAndRoles < ActiveRecord::Migration[6.1]
       t.timestamps
     end
 
-    add_index :invitations, :token, unique: true
-    add_index :invitations, [:company_id, :email]
+    add_index :invitations, :token, unique: true unless index_exists?(:invitations, :token)
+    add_index :invitations, [:company_id, :email] unless index_exists?(:invitations, [:company_id, :email])
     add_index :audit_logs, [:company_id, :created_at]
     add_index :audit_logs, [:resource_type, :resource_id]
     add_index :notifications, [:user_id, :read]
