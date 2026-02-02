@@ -22,4 +22,11 @@ environment.loaders.keys().forEach((key) => {
   })
 })
 
+// Fix: Webpack 4 can't handle named exports from .mjs ES modules (vue-router, etc.)
+environment.loaders.prepend('mjs', {
+  test: /\.mjs$/,
+  include: /node_modules/,
+  type: 'javascript/auto'
+})
+
 module.exports = environment
