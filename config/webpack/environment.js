@@ -29,10 +29,12 @@ environment.loaders.prepend('mjs', {
   type: 'javascript/auto'
 })
 
-// Force Vue to use ESM build so vue-router can import named exports
+// Force Vue and related packages to use ESM builds for Webpack 4 compatibility
 environment.config.resolve.alias = {
   ...environment.config.resolve.alias,
-  'vue': 'vue/dist/vue.esm-bundler.js'
+  'vue': 'vue/dist/vue.esm-bundler.js',
+  'vue-router': require.resolve('vue-router/dist/vue-router.esm-bundler.js'),
+  'pinia': require.resolve('pinia/dist/pinia.esm-browser.js')
 }
 
 module.exports = environment
