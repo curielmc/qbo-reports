@@ -22,6 +22,7 @@ import JournalEntries from '../views/JournalEntries.vue'
 import Onboarding from '../views/Onboarding.vue'
 import Chat from '../views/Chat.vue'
 import Comments from '../views/Comments.vue'
+import Messages from '../views/Messages.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { guest: true } },
@@ -39,6 +40,7 @@ const routes = [
   { path: '/import', name: 'ImportWizard', component: ImportWizard, meta: { requiresAuth: true } },
   { path: '/journal', name: 'JournalEntries', component: JournalEntries, meta: { requiresAuth: true } },
   { path: '/onboarding', name: 'Onboarding', component: Onboarding, meta: { requiresAuth: true } },
+  { path: '/messages', name: 'Messages', component: Messages, meta: { requiresAuth: true } },
   { path: '/comments', name: 'Comments', component: Comments, meta: { requiresAuth: true, requiresInternal: true } },
   
   // Admin routes (executive + manager)

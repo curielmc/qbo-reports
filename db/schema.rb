@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_02_03_010001) do
+ActiveRecord::Schema.define(version: 2026_02_03_020001) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -182,6 +182,18 @@ ActiveRecord::Schema.define(version: 2026_02_03_010001) do
     t.index ["company_id", "created_at"], name: "index_chat_messages_on_company_id_and_created_at"
     t.index ["company_id"], name: "index_chat_messages_on_company_id"
     t.index ["user_id"], name: "index_chat_messages_on_user_id"
+  end
+
+  create_table "client_messages", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "user_id", null: false
+    t.text "body", null: false
+    t.jsonb "mentioned_user_ids", default: []
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["company_id", "created_at"], name: "index_client_messages_on_company_id_and_created_at"
+    t.index ["company_id"], name: "index_client_messages_on_company_id"
+    t.index ["user_id"], name: "index_client_messages_on_user_id"
   end
 
   create_table "comments", force: :cascade do |t|
@@ -517,6 +529,8 @@ ActiveRecord::Schema.define(version: 2026_02_03_010001) do
   add_foreign_key "comments", "users"
   add_foreign_key "mentions", "comments"
   add_foreign_key "mentions", "users"
+  add_foreign_key "client_messages", "companies"
+  add_foreign_key "client_messages", "users"
   add_foreign_key "chat_messages", "companies"
   add_foreign_key "chat_messages", "users"
   add_foreign_key "company_users", "companies"

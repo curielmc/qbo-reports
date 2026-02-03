@@ -136,8 +136,11 @@
               <li><router-link to="/dashboard" @click="closeMobile" :class="{'active': $route.path === '/dashboard'}">
                 <span class="text-lg">📊</span> Dashboard
               </router-link></li>
+              <li><router-link to="/messages" @click="closeMobile">
+                <span class="text-lg">💬</span> Messages
+              </router-link></li>
               <li v-if="canSeeComments"><router-link to="/comments" @click="closeMobile">
-                <span class="text-lg">📝</span> Comments
+                <span class="text-lg">📝</span> Internal Notes
               </router-link></li>
 
               <li class="menu-title text-xs uppercase tracking-wider mt-4">Bookkeeping</li>

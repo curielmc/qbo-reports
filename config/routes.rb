@@ -108,11 +108,18 @@ Rails.application.routes.draw do
         post 'chat', to: 'chat#create'
         delete 'chat', to: 'chat#destroy'
 
-        # Comments (company-level)
+        # Comments (company-level, internal only)
         resources :comments, only: [:index, :create, :destroy] do
           collection do
             get :mentionable_users
             get :recent
+          end
+        end
+
+        # Client messages (company-level, visible to all roles)
+        resources :messages, only: [:index, :create, :destroy], controller: 'client_messages' do
+          collection do
+            get :participants
           end
         end
 
@@ -236,6 +243,7 @@ Rails.application.routes.draw do
   get '/import', to: 'home#index'
   get '/journal', to: 'home#index'
   get '/onboarding', to: 'home#index'
+  get '/messages', to: 'home#index'
   get '/comments', to: 'home#index'
   get '/chat', to: 'home#index'
   get '/login', to: 'home#index'
