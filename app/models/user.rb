@@ -13,6 +13,8 @@ class User < ApplicationRecord
   has_many :company_users, dependent: :destroy
   has_many :companies, through: :company_users
   has_many :api_keys, dependent: :destroy
+  has_many :comments, dependent: :destroy
+  has_many :mentions, dependent: :destroy
 
   validates :role, presence: true
 

@@ -136,6 +136,9 @@
               <li><router-link to="/dashboard" @click="closeMobile" :class="{'active': $route.path === '/dashboard'}">
                 <span class="text-lg">📊</span> Dashboard
               </router-link></li>
+              <li v-if="canSeeComments"><router-link to="/comments" @click="closeMobile">
+                <span class="text-lg">📝</span> Comments
+              </router-link></li>
 
               <li class="menu-title text-xs uppercase tracking-wider mt-4">Bookkeeping</li>
               <li><router-link to="/transactions" @click="closeMobile">
@@ -269,6 +272,11 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
 const isBookkeeper = computed(() => authStore.user?.role === 'bookkeeper' || authStore.isAdmin)
+// Comments are internal-only: visible to executives, managers, advisors, and bookkeepers (not clients/viewers)
+const canSeeComments = computed(() => {
+  const role = authStore.user?.role
+  return ['executive', 'manager', 'advisor'].includes(role) || isBookkeeper.value
+})
 const isMasquerading = computed(() => authStore.isMasquerading)
 const masqueradeName = computed(() => {
   const m = authStore.masqueradingAs

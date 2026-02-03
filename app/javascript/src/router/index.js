@@ -21,6 +21,7 @@ import ImportWizard from '../views/ImportWizard.vue'
 import JournalEntries from '../views/JournalEntries.vue'
 import Onboarding from '../views/Onboarding.vue'
 import Chat from '../views/Chat.vue'
+import Comments from '../views/Comments.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { guest: true } },
@@ -38,6 +39,7 @@ const routes = [
   { path: '/import', name: 'ImportWizard', component: ImportWizard, meta: { requiresAuth: true } },
   { path: '/journal', name: 'JournalEntries', component: JournalEntries, meta: { requiresAuth: true } },
   { path: '/onboarding', name: 'Onboarding', component: Onboarding, meta: { requiresAuth: true } },
+  { path: '/comments', name: 'Comments', component: Comments, meta: { requiresAuth: true, requiresInternal: true } },
   
   // Admin routes (executive + manager)
   { path: '/admin', redirect: '/admin/companies' },
@@ -72,6 +74,10 @@ router.beforeEach((to) => {
   }
   // Only executive can access settings
   if (to.meta.requiresExecutive && role !== 'executive') {
+    return { name: 'Chat' }
+  }
+  // Internal-only routes (comments) - not for clients/viewers
+  if (to.meta.requiresInternal && !['executive', 'manager', 'advisor'].includes(role)) {
     return { name: 'Chat' }
   }
   if (to.meta.guest && token) {

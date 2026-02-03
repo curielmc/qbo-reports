@@ -88,6 +88,7 @@ Rails.application.routes.draw do
           collection do
             post :categorize
           end
+          resources :comments, only: [:index, :create, :destroy], controller: 'comments'
         end
         resources :chart_of_accounts, only: [:index, :create, :update, :destroy] do
           collection do
@@ -106,6 +107,14 @@ Rails.application.routes.draw do
         get 'chat', to: 'chat#index'
         post 'chat', to: 'chat#create'
         delete 'chat', to: 'chat#destroy'
+
+        # Comments (company-level)
+        resources :comments, only: [:index, :create, :destroy] do
+          collection do
+            get :mentionable_users
+            get :recent
+          end
+        end
 
         # Usage / billing
         get 'usage', to: 'usage#show'
@@ -180,6 +189,7 @@ Rails.application.routes.draw do
             post :post_entry
             post :reverse
           end
+          resources :comments, only: [:index, :create, :destroy], controller: 'comments'
           collection do
             get :suggestions
             post :auto_adjust
@@ -226,6 +236,7 @@ Rails.application.routes.draw do
   get '/import', to: 'home#index'
   get '/journal', to: 'home#index'
   get '/onboarding', to: 'home#index'
+  get '/comments', to: 'home#index'
   get '/chat', to: 'home#index'
   get '/login', to: 'home#index'
   get '/admin', to: 'home#index'

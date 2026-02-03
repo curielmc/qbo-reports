@@ -103,6 +103,7 @@
                   Amount {{ sortIcon('amount') }}
                 </th>
                 <th>Status</th>
+                <th v-if="canSeeComments" class="w-10"></th>
               </tr>
             </thead>
             <tbody>
@@ -132,9 +133,19 @@
                     {{ txn.pending ? 'Pending' : '✓' }}
                   </span>
                 </td>
+                <td v-if="canSeeComments">
+                  <button @click.stop="openCommentPanel(txn)"
+                    :class="['btn btn-ghost btn-xs', commentTxnId === txn.id ? 'btn-active' : '']"
+                    :title="'Comments for ' + txn.description">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                    </svg>
+                    <span v-if="txn.comment_count" class="text-xs">{{ txn.comment_count }}</span>
+                  </button>
+                </td>
               </tr>
               <tr v-if="transactions.length === 0 && !loading">
-                <td colspan="7" class="text-center py-12 text-base-content/50">
+                <td colspan="8" class="text-center py-12 text-base-content/50">
                   No transactions found. Try adjusting your filters.
                 </td>
               </tr>
@@ -165,15 +176,48 @@
         </div>
       </div>
     </div>
+    <!-- Transaction Comment Panel -->
+    <dialog :class="['modal modal-bottom sm:modal-middle', commentTxnId ? 'modal-open' : '']">
+      <div class="modal-box max-w-lg w-full sm:w-auto">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h3 class="font-bold text-lg">Transaction Comments</h3>
+            <p v-if="commentTxn" class="text-sm text-base-content/50 mt-0.5">
+              {{ commentTxn.description }} &middot; {{ formatCurrency(commentTxn.amount) }} &middot; {{ formatDate(commentTxn.date) }}
+            </p>
+          </div>
+          <button @click="closeCommentPanel" class="btn btn-ghost btn-sm btn-circle">X</button>
+        </div>
+        <CommentThread
+          v-if="commentTxnId"
+          ref="txnCommentThread"
+          commentable-type="transaction"
+          :commentable-id="commentTxnId"
+          :show-header="false"
+          placeholder="Add a comment about this transaction..."
+          @count-changed="onTxnCommentCount"
+        />
+      </div>
+      <form method="dialog" class="modal-backdrop" @click="closeCommentPanel"><button>close</button></form>
+    </dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAppStore } from '../stores/app'
+import { useAuthStore } from '../stores/auth'
 import { apiClient } from '../api/client'
+import CommentThread from '../components/CommentThread.vue'
 
 const appStore = useAppStore()
+const authStore = useAuthStore()
+const canSeeComments = computed(() => {
+  const role = authStore.user?.role
+  return ['executive', 'manager', 'advisor'].includes(role)
+    || authStore.isAdmin
+    || authStore.user?.is_bookkeeper
+})
 const transactions = ref([])
 const accounts = ref([])
 const categories = ref([])
@@ -184,6 +228,27 @@ const bulkCategory = ref('')
 const pagination = ref({ page: 1, per_page: 50, total: 0, total_pages: 1 })
 const sortField = ref('date')
 const sortDir = ref('desc')
+const commentTxnId = ref(null)
+const commentTxn = ref(null)
+const txnCommentThread = ref(null)
+
+const openCommentPanel = (txn) => {
+  commentTxn.value = txn
+  commentTxnId.value = txn.id
+}
+
+const closeCommentPanel = () => {
+  commentTxnId.value = null
+  commentTxn.value = null
+}
+
+const onTxnCommentCount = (count) => {
+  // Update the comment count badge on the transaction row
+  if (commentTxn.value) {
+    const txn = transactions.value.find(t => t.id === commentTxn.value.id)
+    if (txn) txn.comment_count = count
+  }
+}
 
 const companyId = () => appStore.activeCompany?.id || 1
 

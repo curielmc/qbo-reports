@@ -9,7 +9,7 @@ class Notification < ApplicationRecord
     anomaly low_balance uncategorized_pileup
     reconciliation_due receipt_matched receipt_unmatched
     credit_low credit_exhausted invitation_accepted
-    monthly_report_ready
+    monthly_report_ready comment_mention
   ].freeze
 
   def self.notify!(company:, user:, type:, title:, body: nil, data: nil)
