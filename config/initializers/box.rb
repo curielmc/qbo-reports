@@ -9,10 +9,13 @@ module BoxAuth
     passphrase = Rails.application.credentials.dig(:box, :private_key_passphrase) || ENV['BOX_PRIVATE_KEY_PASSPHRASE']
 
     key_path = Rails.root.join('config', 'box_private_key.pem')
-    unless File.exist?(key_path)
-      raise "Box private key not found at #{key_path}"
-    end
-    private_key = File.read(key_path)
+    private_key = if File.exist?(key_path)
+                    File.read(key_path)
+                  elsif ENV['BOX_PRIVATE_KEY'].present?
+                    ENV['BOX_PRIVATE_KEY'].gsub('\n', "\n")
+                  else
+                    raise "Box private key not found. Set BOX_PRIVATE_KEY env var or place config/box_private_key.pem"
+                  end
 
     Boxr::Client.new(
       '',
