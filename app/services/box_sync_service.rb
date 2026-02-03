@@ -10,13 +10,16 @@ class BoxSyncService
   def run
     @sync_job.update!(status: 'scanning', started_at: Time.current)
 
-    token = @company.box_developer_token
     folder_id = @company.box_folder_id
-    unless token.present? && folder_id.present?
-      return fail_job('Box developer token and folder ID are required')
+    unless folder_id.present?
+      return fail_job('Box folder ID is required')
     end
 
-    client = Boxr::Client.new(token)
+    unless @company.box_developer_token.present? || BoxAuth.configured?
+      return fail_job('Box is not configured. Set a developer token or configure JWT credentials.')
+    end
+
+    client = BoxAuth.client_for(@company)
 
     # Recursively collect all supported files
     files = collect_files(client, folder_id)

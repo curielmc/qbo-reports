@@ -32,6 +32,9 @@
 # Ignore master key for decrypting credentials and more.
 /config/master.key
 
+# Ignore Box private key
+/config/box_private_key.pem
+
 /public/packs
 /public/packs-test
 /node_modules

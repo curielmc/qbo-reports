@@ -11,6 +11,7 @@ module Api
           box_folder_url: @company.box_folder_url,
           box_folder_id: @company.box_folder_id,
           has_token: @company.box_developer_token.present?,
+          has_jwt: BoxAuth.configured?,
           imported_count: @company.box_imported_files.imported.count
         }
       end
@@ -33,8 +34,11 @@ module Api
 
       # POST /api/v1/companies/:company_id/box/sync
       def sync
-        unless @company.box_developer_token.present? && @company.box_folder_id.present?
-          return render json: { error: 'Box not configured. Set folder URL and developer token first.' }, status: :unprocessable_entity
+        unless @company.box_folder_id.present?
+          return render json: { error: 'Box folder not configured. Set the folder URL first.' }, status: :unprocessable_entity
+        end
+        unless @company.box_developer_token.present? || BoxAuth.configured?
+          return render json: { error: 'Box not configured. Set a developer token or configure JWT credentials.' }, status: :unprocessable_entity
         end
 
         # Create sync job record
@@ -90,13 +94,12 @@ module Api
 
       # GET /api/v1/companies/:company_id/box/embed_url/:file_id
       def embed_url
-        token = @company.box_developer_token
-        unless token.present?
-          return render json: { error: 'Box token not configured' }, status: :unprocessable_entity
+        unless @company.box_developer_token.present? || BoxAuth.configured?
+          return render json: { error: 'Box not configured' }, status: :unprocessable_entity
         end
 
         begin
-          client = Boxr::Client.new(token)
+          client = BoxAuth.client_for(@company)
           url = client.embed_url(params[:file_id], show_download: false, show_annotations: false)
           render json: { embed_url: url }
         rescue Boxr::BoxrError => e

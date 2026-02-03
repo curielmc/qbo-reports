@@ -28,7 +28,7 @@
               <button class="btn btn-sm btn-ghost" @click="showBoxSettings = !showBoxSettings">
                 {{ showBoxSettings ? 'Hide' : 'Settings' }}
               </button>
-              <button v-if="boxConfig && boxConfig.has_token && boxConfig.box_folder_id"
+              <button v-if="boxConfig && (boxConfig.has_token || boxConfig.has_jwt) && boxConfig.box_folder_id"
                 class="btn btn-sm btn-primary" @click="triggerBoxSync" :disabled="boxSyncing">
                 <span v-if="boxSyncing" class="loading loading-spinner loading-xs"></span>
                 Refresh
