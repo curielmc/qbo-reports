@@ -6,6 +6,7 @@ class AccountTransaction < ApplicationRecord
   belongs_to :reconciliation, optional: true
   has_one :company, through: :account
   has_one :journal_entry, foreign_key: 'transaction_id', dependent: :destroy
+  has_many :comments, as: :commentable, dependent: :destroy
 
   scope :cleared, -> { where(pending: false) }
   scope :pending, -> { where(pending: true) }

@@ -2,6 +2,7 @@ class JournalEntry < ApplicationRecord
   belongs_to :company
   belongs_to :account_transaction, foreign_key: 'transaction_id', optional: true
   has_many :journal_lines, dependent: :destroy
+  has_many :comments, as: :commentable, dependent: :destroy
 
   validates :entry_date, presence: true
   validate :must_balance

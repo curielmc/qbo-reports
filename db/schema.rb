@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_02_02_220004) do
+ActiveRecord::Schema.define(version: 2026_02_03_010001) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -184,6 +184,21 @@ ActiveRecord::Schema.define(version: 2026_02_02_220004) do
     t.index ["user_id"], name: "index_chat_messages_on_user_id"
   end
 
+  create_table "comments", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.bigint "user_id", null: false
+    t.string "commentable_type", null: false
+    t.bigint "commentable_id", null: false
+    t.text "body", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["commentable_type", "commentable_id"], name: "index_comments_on_commentable_type_and_commentable_id"
+    t.index ["company_id", "commentable_type", "commentable_id"], name: "idx_comments_company_commentable"
+    t.index ["company_id", "created_at"], name: "index_comments_on_company_id_and_created_at"
+    t.index ["company_id"], name: "index_comments_on_company_id"
+    t.index ["user_id"], name: "index_comments_on_user_id"
+  end
+
   create_table "companies", force: :cascade do |t|
     t.string "name", null: false
     t.string "external_id"
@@ -215,6 +230,16 @@ ActiveRecord::Schema.define(version: 2026_02_02_220004) do
     t.index ["company_id", "user_id"], name: "index_company_users_on_company_id_and_user_id", unique: true
     t.index ["company_id"], name: "index_company_users_on_company_id"
     t.index ["user_id"], name: "index_company_users_on_user_id"
+  end
+
+  create_table "mentions", force: :cascade do |t|
+    t.bigint "comment_id", null: false
+    t.bigint "user_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["comment_id"], name: "index_mentions_on_comment_id"
+    t.index ["user_id", "created_at"], name: "index_mentions_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_mentions_on_user_id"
   end
 
   create_table "invitations", force: :cascade do |t|
@@ -488,6 +513,10 @@ ActiveRecord::Schema.define(version: 2026_02_02_220004) do
   add_foreign_key "categorization_rules", "chart_of_accounts"
   add_foreign_key "categorization_rules", "companies"
   add_foreign_key "chart_of_accounts", "companies"
+  add_foreign_key "comments", "companies"
+  add_foreign_key "comments", "users"
+  add_foreign_key "mentions", "comments"
+  add_foreign_key "mentions", "users"
   add_foreign_key "chat_messages", "companies"
   add_foreign_key "chat_messages", "users"
   add_foreign_key "company_users", "companies"

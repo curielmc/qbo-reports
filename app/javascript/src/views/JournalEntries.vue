@@ -80,6 +80,12 @@
                 <button v-if="!entry.posted" @click="postEntry(entry)" class="btn btn-success btn-xs">Post</button>
                 <button v-if="entry.posted && !entry.reversed" @click="reverseEntry(entry)" class="btn btn-outline btn-xs">↩️ Reverse</button>
                 <button v-if="!entry.posted" @click="deleteEntry(entry)" class="btn btn-ghost btn-xs text-error">🗑️</button>
+                <button v-if="canSeeComments" @click="toggleEntryComments(entry)" class="btn btn-ghost btn-xs gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                  </svg>
+                  Comments
+                </button>
               </div>
             </div>
           </div>
@@ -99,6 +105,16 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Inline Comments (internal only) -->
+          <div v-if="canSeeComments && expandedCommentEntryId === entry.id" class="mt-4 pt-4 border-t border-base-200">
+            <CommentThread
+              commentable-type="journal_entry"
+              :commentable-id="entry.id"
+              :show-header="true"
+              placeholder="Add a comment about this journal entry..."
+            />
           </div>
         </div>
       </div>
@@ -229,9 +245,18 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '../stores/app'
+import { useAuthStore } from '../stores/auth'
 import { apiClient } from '../api/client'
+import CommentThread from '../components/CommentThread.vue'
 
 const appStore = useAppStore()
+const authStore = useAuthStore()
+const canSeeComments = computed(() => {
+  const role = authStore.user?.role
+  return ['executive', 'manager', 'advisor'].includes(role)
+    || authStore.isAdmin
+    || authStore.user?.is_bookkeeper
+})
 const companyId = () => appStore.activeCompany?.id || 1
 const formatCurrency = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0)
 
@@ -245,6 +270,11 @@ const editingEntry = ref(null)
 const suggestions = ref([])
 const highConfidence = ref(0)
 const autoAdjusting = ref(false)
+const expandedCommentEntryId = ref(null)
+
+const toggleEntryComments = (entry) => {
+  expandedCommentEntryId.value = expandedCommentEntryId.value === entry.id ? null : entry.id
+}
 
 const form = ref({
   entry_date: new Date().toISOString().split('T')[0],

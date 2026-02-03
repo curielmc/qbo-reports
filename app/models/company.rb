@@ -27,6 +27,9 @@ class Company < ApplicationRecord
   has_many :api_keys, dependent: :destroy
   has_many :box_imported_files, dependent: :destroy
   has_many :box_sync_jobs, dependent: :destroy
+  has_many :comments, dependent: :destroy
+  has_many :company_comments, -> { where(commentable_type: 'Company') },
+           class_name: 'Comment', foreign_key: 'company_id'
 
   validates :name, presence: true
 

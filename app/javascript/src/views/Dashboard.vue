@@ -115,6 +115,22 @@
       <router-link to="/transactions" class="btn btn-outline gap-2">💳 Transactions</router-link>
     </div>
 
+    <!-- Company Notes / Comments (internal only) -->
+    <div v-if="canSeeComments" class="card bg-base-100 shadow-xl mb-8">
+      <div class="card-body">
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="card-title">Team Notes</h2>
+          <router-link to="/comments" class="btn btn-ghost btn-sm">View All →</router-link>
+        </div>
+        <p class="text-sm text-base-content/50 mb-3">Leave notes, reminders, or questions about this company. Use @mentions to notify teammates.</p>
+        <CommentThread
+          commentable-type="company"
+          :show-header="false"
+          placeholder="Add a note about this company... (use @ to mention someone)"
+        />
+      </div>
+    </div>
+
     <!-- Recent Transactions -->
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body">
@@ -164,6 +180,16 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { apiClient } from '../api/client'
+import { useAuthStore } from '../stores/auth'
+import CommentThread from '../components/CommentThread.vue'
+
+const authStore = useAuthStore()
+const canSeeComments = computed(() => {
+  const role = authStore.user?.role
+  return ['executive', 'manager', 'advisor'].includes(role)
+    || authStore.isAdmin
+    || authStore.user?.is_bookkeeper
+})
 
 const data = ref({
   stats: {},
