@@ -89,6 +89,11 @@ class TaxFormGenerator
       end
     end
 
+    # Add Schedule C deductions (home office, vehicle)
+    tax_year = start_date.year
+    home_office = @company.home_office_records.find_by(tax_year: tax_year)
+    vehicles = @company.vehicle_records.where(tax_year: tax_year)
+
     {
       income: income,
       expenses: expenses,
@@ -96,7 +101,13 @@ class TaxFormGenerator
       liabilities: liabilities,
       total_income: income.values.sum.round(2),
       total_expenses: expenses.values.sum.round(2),
-      net_income: (income.values.sum - expenses.values.sum).round(2)
+      net_income: (income.values.sum - expenses.values.sum).round(2),
+      schedule_c_additions: {
+        home_office_deduction: home_office&.deductible_amount&.to_f || 0,
+        home_office_method: home_office&.method,
+        vehicle_deductions: vehicles.sum(:deductible_amount).to_f,
+        vehicle_count: vehicles.count
+      }
     }
   end
 
@@ -121,6 +132,9 @@ class TaxFormGenerator
       #{data[:liabilities].map { |k, v| "  #{k}: $#{v}" }.join("\n")}
 
       Net Income: $#{data[:net_income]}
+
+      SCHEDULE C DEDUCTIONS (worksheets):
+      #{schedule_c_additions_text(data[:schedule_c_additions])}
 
       #{form_specific_instructions(form_type)}
 
@@ -168,6 +182,21 @@ class TaxFormGenerator
     P
   end
 
+  def schedule_c_additions_text(additions)
+    return "  No additional Schedule C worksheets entered." if additions.nil?
+
+    lines = []
+    if additions[:home_office_deduction].to_f > 0
+      method_text = additions[:home_office_method] == 'simplified' ? 'Simplified Method' : 'Regular Method (Form 8829)'
+      lines << "  Home Office Deduction (#{method_text}): $#{additions[:home_office_deduction].round(2)}"
+    end
+    if additions[:vehicle_deductions].to_f > 0
+      lines << "  Vehicle Expenses (#{additions[:vehicle_count]} vehicle#{'s' if additions[:vehicle_count] != 1}): $#{additions[:vehicle_deductions].round(2)}"
+    end
+
+    lines.empty? ? "  No additional deductions entered." : lines.join("\n")
+  end
+
   def form_specific_instructions(form_type)
     case form_type
     when 'schedule_c'
@@ -179,6 +208,11 @@ class TaxFormGenerator
         - Part IV: Vehicle Information (if applicable)
         - Part V: Other Expenses (for categories that don't fit standard lines)
         Map expense categories to standard Schedule C lines (advertising, car expenses, commissions, insurance, interest, legal, office expense, rent, repairs, supplies, taxes, travel, meals, utilities, wages, other).
+
+        IMPORTANT for Schedule C deductions from worksheets:
+        - If Home Office Deduction is provided, include it on Line 30 (Expenses for business use of home). Note whether Form 8829 is needed (Regular method) or simplified method was used.
+        - If Vehicle Expenses are provided, include them on Line 9 (Car and truck expenses).
+        - These amounts from worksheets should be added to any existing amounts already in those expense categories.
       I
     when 'form_1065'
       <<~I

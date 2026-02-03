@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_02_03_020001) do
+ActiveRecord::Schema.define(version: 2026_02_03_030002) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -244,14 +244,29 @@ ActiveRecord::Schema.define(version: 2026_02_03_020001) do
     t.index ["user_id"], name: "index_company_users_on_user_id"
   end
 
-  create_table "mentions", force: :cascade do |t|
-    t.bigint "comment_id", null: false
-    t.bigint "user_id", null: false
+  create_table "home_office_records", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.integer "tax_year", null: false
+    t.string "method", null: false
+    t.integer "total_home_sq_ft"
+    t.integer "office_sq_ft"
+    t.decimal "business_use_percentage", precision: 5, scale: 2
+    t.decimal "simplified_deduction", precision: 10, scale: 2
+    t.decimal "mortgage_interest", precision: 10, scale: 2
+    t.decimal "real_estate_taxes", precision: 10, scale: 2
+    t.decimal "rent_paid", precision: 10, scale: 2
+    t.decimal "utilities", precision: 10, scale: 2
+    t.decimal "insurance", precision: 10, scale: 2
+    t.decimal "repairs_maintenance", precision: 10, scale: 2
+    t.decimal "depreciation", precision: 10, scale: 2
+    t.decimal "other_expenses", precision: 10, scale: 2
+    t.decimal "total_expenses", precision: 10, scale: 2
+    t.decimal "deductible_amount", precision: 10, scale: 2
+    t.text "notes"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
-    t.index ["comment_id"], name: "index_mentions_on_comment_id"
-    t.index ["user_id", "created_at"], name: "index_mentions_on_user_id_and_created_at"
-    t.index ["user_id"], name: "index_mentions_on_user_id"
+    t.index ["company_id", "tax_year"], name: "index_home_office_records_on_company_id_and_tax_year", unique: true
+    t.index ["company_id"], name: "index_home_office_records_on_company_id"
   end
 
   create_table "invitations", force: :cascade do |t|
@@ -321,6 +336,16 @@ ActiveRecord::Schema.define(version: 2026_02_03_020001) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.index ["company_id"], name: "index_journal_templates_on_company_id"
+  end
+
+  create_table "mentions", force: :cascade do |t|
+    t.bigint "comment_id", null: false
+    t.bigint "user_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["comment_id"], name: "index_mentions_on_comment_id"
+    t.index ["user_id", "created_at"], name: "index_mentions_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_mentions_on_user_id"
   end
 
   create_table "month_end_closes", force: :cascade do |t|
@@ -508,6 +533,38 @@ ActiveRecord::Schema.define(version: 2026_02_03_020001) do
     t.index ["role"], name: "index_users_on_role"
   end
 
+  create_table "vehicle_records", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.integer "tax_year", null: false
+    t.string "vehicle_description"
+    t.date "date_placed_in_service"
+    t.string "method", null: false
+    t.integer "total_miles"
+    t.integer "business_miles"
+    t.integer "commuting_miles"
+    t.integer "personal_miles"
+    t.decimal "business_use_percentage", precision: 5, scale: 2
+    t.decimal "mileage_rate", precision: 5, scale: 3
+    t.decimal "standard_mileage_deduction", precision: 10, scale: 2
+    t.decimal "gas_fuel", precision: 10, scale: 2
+    t.decimal "oil_changes", precision: 10, scale: 2
+    t.decimal "repairs_maintenance", precision: 10, scale: 2
+    t.decimal "insurance", precision: 10, scale: 2
+    t.decimal "registration_fees", precision: 10, scale: 2
+    t.decimal "lease_payments", precision: 10, scale: 2
+    t.decimal "loan_interest", precision: 10, scale: 2
+    t.decimal "depreciation", precision: 10, scale: 2
+    t.decimal "parking_tolls", precision: 10, scale: 2
+    t.decimal "other_expenses", precision: 10, scale: 2
+    t.decimal "total_actual_expenses", precision: 10, scale: 2
+    t.decimal "deductible_amount", precision: 10, scale: 2
+    t.text "notes"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["company_id", "tax_year"], name: "index_vehicle_records_on_company_id_and_tax_year"
+    t.index ["company_id"], name: "index_vehicle_records_on_company_id"
+  end
+
   add_foreign_key "accounts", "companies"
   add_foreign_key "accounts", "plaid_items"
   add_foreign_key "ai_queries", "companies"
@@ -525,16 +582,15 @@ ActiveRecord::Schema.define(version: 2026_02_03_020001) do
   add_foreign_key "categorization_rules", "chart_of_accounts"
   add_foreign_key "categorization_rules", "companies"
   add_foreign_key "chart_of_accounts", "companies"
-  add_foreign_key "comments", "companies"
-  add_foreign_key "comments", "users"
-  add_foreign_key "mentions", "comments"
-  add_foreign_key "mentions", "users"
-  add_foreign_key "client_messages", "companies"
-  add_foreign_key "client_messages", "users"
   add_foreign_key "chat_messages", "companies"
   add_foreign_key "chat_messages", "users"
+  add_foreign_key "client_messages", "companies"
+  add_foreign_key "client_messages", "users"
+  add_foreign_key "comments", "companies"
+  add_foreign_key "comments", "users"
   add_foreign_key "company_users", "companies"
   add_foreign_key "company_users", "users"
+  add_foreign_key "home_office_records", "companies"
   add_foreign_key "invitations", "companies"
   add_foreign_key "invitations", "users", column: "invited_by_id"
   add_foreign_key "journal_entries", "companies"
@@ -542,6 +598,8 @@ ActiveRecord::Schema.define(version: 2026_02_03_020001) do
   add_foreign_key "journal_lines", "chart_of_accounts"
   add_foreign_key "journal_lines", "journal_entries"
   add_foreign_key "journal_templates", "companies"
+  add_foreign_key "mentions", "comments"
+  add_foreign_key "mentions", "users"
   add_foreign_key "month_end_closes", "companies"
   add_foreign_key "month_end_closes", "users"
   add_foreign_key "notifications", "companies"
@@ -563,4 +621,5 @@ ActiveRecord::Schema.define(version: 2026_02_03_020001) do
   add_foreign_key "transactions", "accounts"
   add_foreign_key "transactions", "chart_of_accounts"
   add_foreign_key "transactions", "reconciliations"
+  add_foreign_key "vehicle_records", "companies"
 end

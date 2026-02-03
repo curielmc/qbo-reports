@@ -225,6 +225,19 @@ Rails.application.routes.draw do
         get 'exports/profit_loss', to: 'exports#profit_loss_csv'
         get 'exports/balance_sheet', to: 'exports#balance_sheet_csv'
         get 'exports/chart_of_accounts', to: 'exports#chart_of_accounts_csv'
+
+        # Schedule C deductions (home office, vehicle)
+        get 'schedule_c/home_office', to: 'schedule_c#home_office_index'
+        get 'schedule_c/home_office/:tax_year', to: 'schedule_c#home_office_show'
+        post 'schedule_c/home_office', to: 'schedule_c#home_office_save'
+        put 'schedule_c/home_office', to: 'schedule_c#home_office_save'
+
+        get 'schedule_c/vehicles', to: 'schedule_c#vehicles_index'
+        post 'schedule_c/vehicles', to: 'schedule_c#vehicle_save'
+        put 'schedule_c/vehicles/:id', to: 'schedule_c#vehicle_save'
+        delete 'schedule_c/vehicles/:id', to: 'schedule_c#vehicle_destroy'
+
+        get 'schedule_c/summary/:tax_year', to: 'schedule_c#summary'
       end
     end
   end
@@ -246,6 +259,7 @@ Rails.application.routes.draw do
   get '/messages', to: 'home#index'
   get '/comments', to: 'home#index'
   get '/chat', to: 'home#index'
+  get '/schedule-c', to: 'home#index'
   get '/login', to: 'home#index'
   get '/admin', to: 'home#index'
   get '/admin/billing', to: 'home#index'

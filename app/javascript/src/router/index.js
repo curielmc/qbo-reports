@@ -23,6 +23,7 @@ import Onboarding from '../views/Onboarding.vue'
 import Chat from '../views/Chat.vue'
 import Comments from '../views/Comments.vue'
 import Messages from '../views/Messages.vue'
+import ScheduleC from '../views/ScheduleC.vue'
 
 const routes = [
   { path: '/login', name: 'Login', component: Login, meta: { guest: true } },
@@ -42,7 +43,8 @@ const routes = [
   { path: '/onboarding', name: 'Onboarding', component: Onboarding, meta: { requiresAuth: true } },
   { path: '/messages', name: 'Messages', component: Messages, meta: { requiresAuth: true } },
   { path: '/comments', name: 'Comments', component: Comments, meta: { requiresAuth: true, requiresInternal: true } },
-  
+  { path: '/schedule-c', name: 'ScheduleC', component: ScheduleC, meta: { requiresAuth: true } },
+
   // Admin routes (executive + manager)
   { path: '/admin', redirect: '/admin/companies' },
   { path: '/admin/users', name: 'AdminUsers', component: AdminUsers, meta: { requiresAuth: true, requiresAdmin: true } },

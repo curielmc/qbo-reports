@@ -29,6 +29,8 @@ class Company < ApplicationRecord
   has_many :box_sync_jobs, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :client_messages, dependent: :destroy
+  has_many :home_office_records, dependent: :destroy
+  has_many :vehicle_records, dependent: :destroy
   has_many :company_comments, -> { where(commentable_type: 'Company') },
            class_name: 'Comment', foreign_key: 'company_id'
 

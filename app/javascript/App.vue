@@ -173,6 +173,9 @@
               <li><router-link to="/rules" @click="closeMobile">
                 <span class="text-lg">⚡</span> Auto-Rules
               </router-link></li>
+              <li><router-link to="/schedule-c" @click="closeMobile">
+                <span class="text-lg">📝</span> Schedule C Worksheets
+              </router-link></li>
 
               <li class="menu-title text-xs uppercase tracking-wider mt-4">Account</li>
               <li><router-link to="/billing" @click="closeMobile">
