@@ -108,14 +108,14 @@
           <div v-if="nlResult.data.type === 'compare_periods'" class="mt-2">
             <div class="grid grid-cols-2 gap-4 mb-4">
               <div class="stat bg-base-200 rounded-box p-3">
-                <div class="stat-title text-xs">{{ nlResult.data.period1?.label }}</div>
-                <div class="stat-value text-lg font-mono">{{ formatCurrency(nlResult.data.period1?.net) }}</div>
-                <div class="text-xs">Income {{ formatCurrency(nlResult.data.period1?.income) }} / Expenses {{ formatCurrency(nlResult.data.period1?.expenses) }}</div>
+                <div class="stat-title text-xs">{{ (nlResult.data.period1 || {}).label }}</div>
+                <div class="stat-value text-lg font-mono">{{ formatCurrency((nlResult.data.period1 || {}).net) }}</div>
+                <div class="text-xs">Income {{ formatCurrency((nlResult.data.period1 || {}).income) }} / Expenses {{ formatCurrency((nlResult.data.period1 || {}).expenses) }}</div>
               </div>
               <div class="stat bg-base-200 rounded-box p-3">
-                <div class="stat-title text-xs">{{ nlResult.data.period2?.label }}</div>
-                <div class="stat-value text-lg font-mono">{{ formatCurrency(nlResult.data.period2?.net) }}</div>
-                <div class="text-xs">Income {{ formatCurrency(nlResult.data.period2?.income) }} / Expenses {{ formatCurrency(nlResult.data.period2?.expenses) }}</div>
+                <div class="stat-title text-xs">{{ (nlResult.data.period2 || {}).label }}</div>
+                <div class="stat-value text-lg font-mono">{{ formatCurrency((nlResult.data.period2 || {}).net) }}</div>
+                <div class="text-xs">Income {{ formatCurrency((nlResult.data.period2 || {}).income) }} / Expenses {{ formatCurrency((nlResult.data.period2 || {}).expenses) }}</div>
               </div>
             </div>
             <div v-if="nlResult.data.expense_breakdown && nlResult.data.expense_breakdown.length" class="overflow-x-auto">
@@ -601,7 +601,7 @@
         </div>
 
         <!-- P&L Summary -->
-        <div v-if="meData.diagnostics?.pl_summary" class="card bg-base-100 shadow">
+        <div v-if="meData.diagnostics && meData.diagnostics.pl_summary" class="card bg-base-100 shadow">
           <div class="card-body py-4">
             <h3 class="card-title text-base">{{ meData.period }} P&L Summary</h3>
             <div class="grid grid-cols-3 gap-4">
@@ -659,32 +659,32 @@
               <!-- Uncategorized -->
               <div class="p-3 rounded-lg bg-base-200">
                 <h4 class="font-medium text-sm mb-1">Uncategorized Transactions</h4>
-                <p class="text-sm">{{ meData.diagnostics?.uncategorized?.message }}</p>
+                <p class="text-sm">{{ ((meData.diagnostics || {}).uncategorized || {}).message }}</p>
               </div>
               <!-- Reconciliation -->
               <div class="p-3 rounded-lg bg-base-200">
                 <h4 class="font-medium text-sm mb-1">Reconciliation</h4>
-                <p class="text-sm">{{ meData.diagnostics?.reconciliation?.message }}</p>
+                <p class="text-sm">{{ ((meData.diagnostics || {}).reconciliation || {}).message }}</p>
               </div>
               <!-- Anomalies -->
               <div class="p-3 rounded-lg bg-base-200">
                 <h4 class="font-medium text-sm mb-1">Anomalies</h4>
-                <p class="text-sm">{{ meData.diagnostics?.anomalies?.message }}</p>
+                <p class="text-sm">{{ ((meData.diagnostics || {}).anomalies || {}).message }}</p>
               </div>
               <!-- Journal -->
               <div class="p-3 rounded-lg bg-base-200">
                 <h4 class="font-medium text-sm mb-1">Journal Entries</h4>
-                <p class="text-sm">{{ meData.diagnostics?.journal_entries?.message }}</p>
+                <p class="text-sm">{{ ((meData.diagnostics || {}).journal_entries || {}).message }}</p>
               </div>
               <!-- Balance Sheet -->
               <div class="p-3 rounded-lg bg-base-200">
                 <h4 class="font-medium text-sm mb-1">Balance Sheet</h4>
-                <p class="text-sm">{{ meData.diagnostics?.balance_sheet?.message }}</p>
+                <p class="text-sm">{{ ((meData.diagnostics || {}).balance_sheet || {}).message }}</p>
               </div>
               <!-- Receipts -->
               <div class="p-3 rounded-lg bg-base-200">
                 <h4 class="font-medium text-sm mb-1">Receipts</h4>
-                <p class="text-sm">{{ meData.diagnostics?.receipts?.message }}</p>
+                <p class="text-sm">{{ ((meData.diagnostics || {}).receipts || {}).message }}</p>
               </div>
             </div>
           </div>
@@ -858,11 +858,11 @@ const submitNlQuery = async () => {
 // Month-End Close state
 const meData = ref(null)
 const meLoading = ref(false)
-const meSelectedPeriod = ref(() => {
+const meSelectedPeriod = ref((() => {
   const d = new Date()
   d.setMonth(d.getMonth() - 1)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
-})()
+})())
 
 const meAvailablePeriods = computed(() => {
   const periods = []
