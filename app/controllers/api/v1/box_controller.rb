@@ -6,7 +6,7 @@ module Api
       before_action :set_company
 
       # GET /api/v1/companies/:company_id/box/config
-      def config
+      def show_config
         render json: {
           box_folder_url: @company.box_folder_url,
           box_folder_id: @company.box_folder_id,

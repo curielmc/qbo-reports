@@ -119,7 +119,7 @@ Rails.application.routes.draw do
         post 'imports/suggest_category', to: 'imports#suggest_category'
 
         # Box.com integration
-        get 'box/config', to: 'box#config'
+        get 'box/config', to: 'box#show_config'
         put 'box/config', to: 'box#update_config'
         post 'box/sync', to: 'box#sync'
         get 'box/sync_status', to: 'box#sync_status'
