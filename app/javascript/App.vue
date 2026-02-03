@@ -50,15 +50,38 @@
               <router-link to="/" class="btn btn-ghost text-xl gap-1">
                 <img src="./src/assets/logo.svg" alt="ecfoBooks" class="h-8" />
               </router-link>
-              <!-- Active company display -->
+              <!-- Active company display with searchable dropdown -->
               <div v-if="activeCompanyName" class="flex items-center gap-2">
                 <div class="w-px h-6 bg-base-300"></div>
-                <div class="flex items-center gap-2">
-                  <span class="text-2xl font-bold text-base-content">{{ activeCompanyName }}</span>
-                  <select v-if="companies.length > 1" v-model="currentCompanyId" @change="switchCompany"
-                    class="select select-ghost select-xs text-base-content/50 w-8 min-h-0 h-6 pl-0 pr-4 focus:outline-none">
-                    <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-                  </select>
+                <div class="relative" ref="companyDropdownRef">
+                  <button @click="companyDropdownOpen = !companyDropdownOpen"
+                    class="flex items-center gap-1 hover:bg-base-200 rounded-lg px-2 py-1 transition">
+                    <span class="text-2xl font-bold text-base-content">{{ activeCompanyName }}</span>
+                    <svg v-if="companies.length > 1" class="w-4 h-4 text-base-content/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div v-if="companyDropdownOpen && companies.length > 1"
+                    class="absolute top-full left-0 mt-1 bg-base-100 rounded-lg shadow-xl border border-base-300 z-50 min-w-[240px] max-w-[360px]">
+                    <div v-if="companies.length > 5" class="p-2 border-b border-base-200">
+                      <input type="text" v-model="companySearch" placeholder="Search companies..."
+                        class="input input-bordered input-sm w-full" ref="companySearchInput" />
+                    </div>
+                    <ul class="py-1 max-h-64 overflow-y-auto">
+                      <li v-for="c in filteredCompanies" :key="c.id">
+                        <button @click="selectCompany(c)"
+                          :class="['flex items-center gap-2 w-full text-left px-3 py-2 text-sm hover:bg-base-200 transition',
+                                    c.id === currentCompanyId ? 'bg-primary/10 font-semibold' : '']">
+                          <svg v-if="c.id === currentCompanyId" class="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                          </svg>
+                          <span v-else class="w-4 flex-shrink-0"></span>
+                          <span class="truncate">{{ c.name }}</span>
+                        </button>
+                      </li>
+                      <li v-if="filteredCompanies.length === 0" class="px-3 py-2 text-sm text-base-content/50">No matches</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
@@ -118,6 +141,9 @@
               <li><router-link to="/transactions" @click="closeMobile">
                 <span class="text-lg">💳</span> Transactions
               </router-link></li>
+              <li><router-link to="/import" @click="closeMobile">
+                <span class="text-lg">📥</span> Import Data
+              </router-link></li>
               <li><router-link to="/journal" @click="closeMobile">
                 <span class="text-lg">📒</span> Journal Entries
               </router-link></li>
@@ -137,9 +163,6 @@
               </router-link></li>
               <li><router-link to="/linked-accounts" @click="closeMobile">
                 <span class="text-lg">🏦</span> Linked Accounts
-              </router-link></li>
-              <li><router-link to="/import" @click="closeMobile">
-                <span class="text-lg">📥</span> Import Data
               </router-link></li>
               <li><router-link to="/rules" @click="closeMobile">
                 <span class="text-lg">⚡</span> Auto-Rules
@@ -192,7 +215,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from './src/stores/auth'
 import { useAppStore } from './src/stores/app'
@@ -205,6 +228,43 @@ const drawerOpen = ref(false)
 const showNotifications = ref(false)
 const unreadCount = ref(0)
 const currentCompanyId = ref(appStore.activeCompany?.id || null)
+
+// Company dropdown state
+const companyDropdownOpen = ref(false)
+const companySearch = ref('')
+const companyDropdownRef = ref(null)
+const companySearchInput = ref(null)
+
+const filteredCompanies = computed(() => {
+  const q = companySearch.value.toLowerCase().trim()
+  if (!q) return companies.value
+  return companies.value.filter(c => c.name.toLowerCase().includes(q))
+})
+
+const selectCompany = (company) => {
+  currentCompanyId.value = company.id
+  companyDropdownOpen.value = false
+  companySearch.value = ''
+  appStore.setCurrentCompany(company)
+}
+
+// Auto-focus search when dropdown opens
+watch(companyDropdownOpen, async (open) => {
+  if (open) {
+    companySearch.value = ''
+    await nextTick()
+    if (companySearchInput.value) companySearchInput.value.focus()
+  }
+})
+
+// Close dropdown on click outside
+const handleClickOutside = (e) => {
+  if (companyDropdownRef.value && !companyDropdownRef.value.contains(e.target)) {
+    companyDropdownOpen.value = false
+  }
+}
+onMounted(() => document.addEventListener('click', handleClickOutside))
+onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
