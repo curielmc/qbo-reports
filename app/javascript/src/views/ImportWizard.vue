@@ -38,20 +38,9 @@
 
           <!-- Box Settings Panel -->
           <div v-if="showBoxSettings" class="mt-4 p-4 bg-base-200 rounded-lg space-y-3">
-            <div v-if="boxConfig && boxConfig.has_jwt" class="flex items-center gap-2 text-sm text-success">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-              Box JWT authentication configured (server-side)
-            </div>
             <div class="form-control">
               <label class="label"><span class="label-text">Box Folder URL</span></label>
               <input type="text" v-model="boxFolderUrl" placeholder="https://app.box.com/folder/123456789"
-                class="input input-bordered input-sm w-full" />
-            </div>
-            <div class="form-control">
-              <label class="label">
-                <span class="label-text">Developer Token <span class="text-base-content/40 font-normal">(optional — only needed if JWT is not configured)</span></span>
-              </label>
-              <input type="password" v-model="boxToken" placeholder="Leave blank to use JWT auth"
                 class="input input-bordered input-sm w-full" />
             </div>
             <button class="btn btn-sm btn-primary" @click="saveBoxConfig" :disabled="savingBoxConfig">
@@ -335,7 +324,7 @@ const editedTransactions = ref([])
 const showBoxSettings = ref(false)
 const boxConfig = ref(null)
 const boxFolderUrl = ref('')
-const boxToken = ref('')
+
 const savingBoxConfig = ref(false)
 const boxSyncing = ref(false)
 const boxSyncStatus = ref(null)
@@ -484,12 +473,10 @@ const saveBoxConfig = async () => {
   savingBoxConfig.value = true
   try {
     await apiClient.put(`/api/v1/companies/${companyId()}/box/config`, {
-      box_folder_url: boxFolderUrl.value,
-      box_developer_token: boxToken.value || undefined
+      box_folder_url: boxFolderUrl.value
     })
     await loadBoxConfig()
     showBoxSettings.value = false
-    boxToken.value = ''
   } catch (err) {
     alert('Failed to save Box config: ' + err.message)
   }
