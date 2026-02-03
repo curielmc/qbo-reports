@@ -201,13 +201,14 @@ class StatementProcessingService
                      Date.current.beginning_of_month - 1.day
                    end
 
-    # Create an opening balance transaction (this auto-creates a JE via sync_journal_entry)
+    # Create an opening balance transaction and post it immediately (system entry)
     txn = account.account_transactions.create!(
       date: opening_date,
       description: 'Opening Balance',
       amount: beginning_balance,
       merchant_name: 'Opening Balance',
       pending: false,
+      ledger_status: 'posted',
       chart_of_account: equity_coa
     )
 

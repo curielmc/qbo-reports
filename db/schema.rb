@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2026_02_03_030002) do
+ActiveRecord::Schema.define(version: 2026_02_03_040001) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -506,11 +506,13 @@ ActiveRecord::Schema.define(version: 2026_02_03_030002) do
     t.string "subcategory"
     t.string "reconciliation_status", default: "uncleared"
     t.bigint "reconciliation_id"
+    t.string "ledger_status", default: "pending", null: false
     t.index ["account_id", "date"], name: "index_transactions_on_account_id_and_date"
     t.index ["account_id"], name: "index_transactions_on_account_id"
     t.index ["chart_of_account_id", "date"], name: "index_transactions_on_chart_of_account_id_and_date"
     t.index ["chart_of_account_id"], name: "index_transactions_on_chart_of_account_id"
     t.index ["date"], name: "index_transactions_on_date"
+    t.index ["ledger_status"], name: "index_transactions_on_ledger_status"
     t.index ["plaid_transaction_id"], name: "index_transactions_on_plaid_transaction_id", unique: true
     t.index ["reconciliation_id"], name: "index_transactions_on_reconciliation_id"
     t.index ["reconciliation_status"], name: "index_transactions_on_reconciliation_status"

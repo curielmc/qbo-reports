@@ -85,8 +85,17 @@ Rails.application.routes.draw do
       resources :companies, only: [:index, :show] do
         resources :accounts, only: [:index, :create, :update, :destroy]
         resources :transactions, only: [:index, :create, :update, :destroy] do
+          member do
+            post :post_transaction
+            post :exclude
+            post :unpost
+          end
           collection do
             post :categorize
+            post :bulk_post
+            post :bulk_exclude
+            get :accounts_summary
+            get :status_counts
           end
           resources :comments, only: [:index, :create, :destroy], controller: 'comments'
         end
