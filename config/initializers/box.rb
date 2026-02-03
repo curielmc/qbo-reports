@@ -1,7 +1,14 @@
 module BoxAuth
-  # Build a Boxr::Client using JWT (server-to-server) auth from Rails credentials + private key file.
-  # Falls back to ENV vars if credentials aren't present.
+  # Get an enterprise access token using JWT auth, then build a Boxr::Client.
+  # Pattern follows ms_app's BoxApi service.
   def self.jwt_client
+    token_info = get_enterprise_token
+    Boxr::Client.new(token_info.access_token)
+  end
+
+  # Get enterprise token using JWT server-to-server auth.
+  # Falls back to ENV vars if credentials aren't present.
+  def self.get_enterprise_token
     client_id  = Rails.application.credentials.dig(:box, :client_id)  || ENV['BOX_CLIENT_ID']
     secret     = Rails.application.credentials.dig(:box, :client_secret) || ENV['BOX_CLIENT_SECRET']
     enterprise = Rails.application.credentials.dig(:box, :enterprise_id) || ENV['BOX_ENTERPRISE_ID']
@@ -17,14 +24,13 @@ module BoxAuth
                     raise "Box private key not found. Set BOX_PRIVATE_KEY env var or place config/box_private_key.pem"
                   end
 
-    Boxr::Client.new(
-      '',
+    Boxr.get_enterprise_token(
+      private_key: private_key,
+      private_key_password: passphrase,
+      public_key_id: key_id,
+      enterprise_id: enterprise.to_s,
       client_id: client_id,
-      client_secret: secret,
-      enterprise_id: enterprise,
-      jwt_private_key: private_key,
-      jwt_private_key_password: passphrase,
-      jwt_public_key_id: key_id
+      client_secret: secret
     )
   end
 
